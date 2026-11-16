@@ -520,7 +520,10 @@
         .slot-social { position: absolute; right: 6px;  bottom: 34px; } /* 右後：social */
         .slot-learn  { position: absolute; left: 6px;   bottom: 10px; } /* 左前：learn */
         .slot-hobby  { position: absolute; right: 6px;  bottom: 10px; } /* 右前：hobby */
-        .slot-rest svg, .slot-social svg, .slot-learn svg, .slot-hobby svg { display: block; }
+        /* 牆面置物架 (後排上方)：只放小型壁掛物件 */
+        .slot-sport  { position: absolute; left: 6px;   bottom: 98px; } /* 左牆：sport */
+        .slot-sleep  { position: absolute; right: 6px;  bottom: 98px; } /* 右牆：sleep */
+        .furniture-layer svg { display: block; }
 
         @keyframes popIn {
             0% { transform: scale(0.4) translateY(8px); opacity: 0; }
@@ -706,15 +709,15 @@
         }
 
         /* ==========================================================================
-           9. 底部 4 顆活動投餵快捷列
+           9. 底部 6 顆活動投餵快捷列
            ========================================================================== */
         .lcd-feed-dock {
-            padding: 6px;
+            padding: 6px 4px;
             border-top: 2px solid var(--lcd-darkest);
             background: rgba(139, 172, 15, 0.65);
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 3px;
             z-index: 25;
         }
 
@@ -746,6 +749,7 @@
         .feed-cat-title {
             font-size: 11px;
             font-weight: bold;
+            white-space: nowrap;
         }
         .feed-cat-sub {
             font-size: 9px;
@@ -912,7 +916,7 @@
             <div class="sim-specs-note">
                 • <strong>雙模式</strong>：<code>已分配 &lt; 已流逝</code> 寫入 <code>retroactive</code>；否則 <code>planned</code>。<br>
                 • <strong>門檻</strong>＝雙週理論時間池 × 比例：家具 <code>1.5%</code> / <code>7%</code>；破蛋 <code>5%</code> / 鎖定 <code>15%</code> / 超級 <code>30%</code>。<br>
-                • <strong>全能光環</strong>：四類各佔已認領 <code>≥15%</code>。<br>
+                • <strong>全能光環</strong>：六類各佔已認領 <code>≥10%</code>。<br>
                 • <strong>本輪門檻</strong>：<span id="simThresholdNote">--</span>
             </div>
         </section>
@@ -1057,7 +1061,7 @@
                             </div>
                         </section>
 
-                        <!-- 3. 底部 4 顆活動投餵快捷鍵 -->
+                        <!-- 3. 底部 6 顆活動投餵快捷鍵 -->
                         <footer class="lcd-feed-dock">
                             <button id="btn-cat-learn" class="feed-cat-btn" onclick="feedCategory('learn')">
                                 <span class="feed-cat-title">📚學習</span>
@@ -1074,6 +1078,14 @@
                             <button id="btn-cat-social" class="feed-cat-btn" onclick="feedCategory('social')">
                                 <span class="feed-cat-title">💬社交</span>
                                 <span id="sub-social" class="feed-cat-sub">0.0h</span>
+                            </button>
+                            <button id="btn-cat-sport" class="feed-cat-btn" onclick="feedCategory('sport')">
+                                <span class="feed-cat-title">🏃運動</span>
+                                <span id="sub-sport" class="feed-cat-sub">0.0h</span>
+                            </button>
+                            <button id="btn-cat-sleep" class="feed-cat-btn" onclick="feedCategory('sleep')">
+                                <span class="feed-cat-title">🌙睡眠</span>
+                                <span id="sub-sleep" class="feed-cat-sub">0.0h</span>
                             </button>
                         </footer>
 
@@ -1162,8 +1174,8 @@
             PET_STAGE_VARIANT_RATIO: 0.15, // 鎖定主屬性「變體（種族基底）」
             PET_STAGE_SUPER_RATIO: 0.30,   // 進化為「超級變體（疊加氣質配件）」
 
-            PET_BALANCED_MIN_SHARE: 0.15,  // 全能光環：四類各佔「已認領總時數」>= 15%
-            CATEGORIES: ['learn', 'rest', 'hobby', 'social'] // 同時也是平手時的固定優先順序
+            PET_BALANCED_MIN_SHARE: 0.10,  // 全能光環：六類各佔「已認領總時數」>= 10%
+            CATEGORIES: ['learn', 'rest', 'hobby', 'social', 'sport', 'sleep'] // 同時也是平手時的固定優先順序
         };
 
         const STORAGE_KEYS = {
@@ -1178,7 +1190,9 @@
             learn:  { name: '學習', icon: '📚', species: '貓頭鷹', accessory: '學士帽＋書本' },
             rest:   { name: '休息', icon: '☕', species: '水豚',   accessory: '溫泉毛巾＋熱茶' },
             hobby:  { name: '興趣', icon: '🎨', species: '狐狸',   accessory: '貝雷帽＋畫筆' },
-            social: { name: '社交', icon: '💬', species: '企鵝',   accessory: '派對帽＋氣球' }
+            social: { name: '社交', icon: '💬', species: '企鵝',   accessory: '派對帽＋氣球' },
+            sport:  { name: '運動', icon: '🏃', species: '兔子',   accessory: '運動頭帶＋啞鈴' },
+            sleep:  { name: '睡眠', icon: '🌙', species: '無尾熊', accessory: '睡帽＋小枕頭' }
         };
 
         const STAGE_NAMES = {
@@ -1374,6 +1388,14 @@
                     currentCycle.furniture = createEmptyFurnitureState();
                     currentCycle.pendingChoices = [];
                 }
+                // 新增類別 (運動 / 睡眠) 前的週期：補上 0 時數與空家具狀態
+                if (currentCycle) {
+                    const emptyFurniture = createEmptyFurnitureState();
+                    MVP_CONFIG.CATEGORIES.forEach(cat => {
+                        if (currentCycle.totalHoursByCategory[cat] == null) currentCycle.totalHoursByCategory[cat] = 0;
+                        if (!currentCycle.furniture[cat]) currentCycle.furniture[cat] = emptyFurniture[cat];
+                    });
+                }
             } catch (e) {
                 console.error('LocalStorage 讀取失敗:', e);
                 userSettings = null;
@@ -1428,12 +1450,7 @@
                 cycleStartDate: cycleStartDate,
                 scheduleSnapshot: scheduleSnapshot,
                 cyclePoolHours: computeCyclePoolHours(cycleStartDate, scheduleSnapshot),
-                totalHoursByCategory: {
-                    learn: 0,
-                    rest: 0,
-                    hobby: 0,
-                    social: 0
-                },
+                totalHoursByCategory: Object.fromEntries(MVP_CONFIG.CATEGORIES.map(cat => [cat, 0])),
                 lastUpdatedCategory: null,
                 lockedVariantSpecies: null,
                 hoursAtVariantLock: null,
@@ -1506,7 +1523,7 @@
            ========================================================================== */
         function getCycleTotalHours(cycle) {
             const w = cycle.totalHoursByCategory;
-            return round1((w.learn || 0) + (w.rest || 0) + (w.hobby || 0) + (w.social || 0));
+            return round1(MVP_CONFIG.CATEGORIES.reduce((sum, cat) => sum + (w[cat] || 0), 0));
         }
 
         function getPetStage(cycle) {
@@ -1538,7 +1555,7 @@
             }
         }
 
-        // 超級變體氣質配件：全能平衡 (四類各佔已認領 >= 15%) 優先，否則取鎖定後增量 Δh 最高的類別
+        // 超級變體氣質配件：全能平衡 (六類各佔已認領 >= 10%) 優先，否則取鎖定後增量 Δh 最高的類別
         function getSuperAccessory(cycle) {
             if (getPetStage(cycle) !== 'super_variant' || !cycle.hoursAtVariantLock) return null;
             const w = cycle.totalHoursByCategory;
@@ -1789,8 +1806,13 @@
         }
 
         // 每類 5 個固定區塊 (Lv1～Lv5)，座標為槽位 viewBox 內的位置
-        // 後排 (rest / social) viewBox 47×26；前排 (learn / hobby) viewBox 57×12，皆放大 2 倍
+        // 後排 (rest / social) viewBox 47×26；前排 (learn / hobby) viewBox 57×12；
+        // 牆面置物架 (sport / sleep) viewBox 47×16，五格各 9×14 立在 y=14 的層板上，皆放大 2 倍
+        const SLOT_VIEWBOX = { back: [47, 26], front: [57, 12], wall: [47, 16] };
+        const SLOT_PREVIEW_VIEWBOX = { back: [14, 13], front: [9, 12], wall: [9, 14] };
         const FURNITURE_SLOTS = {
+            sport:  { row: 'wall',  regions: [[0, 0], [10, 0], [19, 0], [29, 0], [38, 0]] },
+            sleep:  { row: 'wall',  regions: [[38, 0], [29, 0], [19, 0], [10, 0], [0, 0]] },
             rest:   { row: 'back',  regions: [[0, 18], [12, 15], [33, 10], [1, 2], [17, 1]] },
             social: { row: 'back',  regions: [[36, 18], [14, 15], [0, 10], [32, 2], [16, 1]] },
             learn:  { row: 'front', regions: [[0, 0], [11, 0], [19, 0], [38, 0], [47, 0]] },
@@ -1872,6 +1894,43 @@
                     { key: 'models', name: '模型展示櫃', art: [[0, 0, 9, 12, 'D'], [1, 1, 7, 4, 'L'], [1, 6, 7, 5, 'L'], [2, 2, 2, 3, 'D'], [5, 3, 2, 2, 'M'], [3, 7, 3, 4, 'D']] },
                     { key: 'sewing', name: '縫紉機', art: [[0, 9, 9, 3, 'D'], [1, 3, 7, 2, 'D'], [6, 5, 2, 4, 'D'], [1, 5, 2, 4, 'D'], [3, 1, 2, 2, 'M']] }
                 ]
+            },
+            // 牆面置物架：每件 9×14，底部貼齊 y=13
+            sport: {
+                generic: [
+                    { name: '啞鈴', art: [[0, 10, 2, 4, 'D'], [2, 11, 5, 2, 'M'], [7, 10, 2, 4, 'D']] },
+                    { name: '跳繩', art: [[0, 5, 1, 4, 'D'], [8, 5, 1, 4, 'D'], [0, 9, 1, 2, 'M'], [1, 11, 1, 1, 'M'], [2, 12, 5, 1, 'M'], [7, 11, 1, 1, 'M'], [8, 9, 1, 2, 'M']] }
+                ],
+                style: {
+                    deep: { name: '舉重架', art: [[1, 3, 1, 10, 'D'], [7, 3, 1, 10, 'D'], [0, 4, 9, 1, 'D'], [0, 2, 1, 5, 'M'], [8, 2, 1, 5, 'M'], [0, 13, 9, 1, 'D']] },
+                    fragment: { name: '彈力帶掛勾', art: [[0, 1, 9, 1, 'D'], [1, 2, 1, 1, 'D'], [4, 2, 1, 1, 'D'], [7, 2, 1, 1, 'D'], [1, 3, 1, 9, 'M'], [4, 3, 1, 7, 'L'], [7, 3, 1, 10, 'D'], [0, 12, 3, 1, 'M']] },
+                    planner: { name: '訓練課表', art: [[0, 1, 9, 10, 'D'], [1, 2, 7, 8, 'L'], [2, 3, 4, 1, 'D'], [7, 3, 1, 1, 'M'], [2, 5, 3, 1, 'D'], [7, 5, 1, 1, 'M'], [2, 7, 4, 1, 'D'], [4, 11, 1, 3, 'D']] }
+                },
+                pool: [
+                    { key: 'ball', name: '籃球', art: [[2, 7, 5, 7, 'D'], [3, 8, 3, 5, 'M'], [4, 7, 1, 7, 'D'], [2, 10, 5, 1, 'D']] },
+                    { key: 'kettlebell', name: '壺鈴', art: [[3, 5, 3, 1, 'D'], [2, 6, 1, 3, 'D'], [6, 6, 1, 3, 'D'], [1, 9, 7, 5, 'D'], [2, 10, 5, 3, 'L']] },
+                    { key: 'medal', name: '完賽獎牌', art: [[2, 0, 1, 4, 'M'], [6, 0, 1, 4, 'M'], [3, 4, 3, 1, 'M'], [2, 5, 5, 5, 'D'], [3, 6, 3, 3, 'L'], [4, 7, 1, 1, 'D']] },
+                    { key: 'shoes', name: '跑鞋', art: [[1, 8, 3, 3, 'D'], [2, 9, 1, 1, 'L'], [4, 10, 3, 1, 'D'], [1, 11, 8, 2, 'D'], [1, 13, 8, 1, 'M']] },
+                    { key: 'bottle', name: '運動水壺', art: [[3, 2, 3, 1, 'D'], [2, 3, 5, 11, 'D'], [3, 4, 3, 9, 'L'], [3, 7, 3, 2, 'M']] }
+                ]
+            },
+            sleep: {
+                generic: [
+                    { name: '小夜燈', art: [[3, 5, 3, 5, 'D'], [4, 6, 1, 3, 'L'], [2, 10, 5, 1, 'D'], [3, 11, 3, 3, 'D']] },
+                    { name: '鬧鐘', art: [[0, 4, 2, 1, 'D'], [7, 4, 2, 1, 'D'], [1, 5, 7, 7, 'D'], [2, 6, 5, 5, 'L'], [4, 7, 1, 2, 'D'], [5, 8, 1, 1, 'D'], [1, 12, 1, 2, 'D'], [7, 12, 1, 2, 'D']] }
+                ],
+                style: {
+                    deep: { name: '枕頭塔', art: [[2, 3, 5, 3, 'D'], [3, 4, 3, 1, 'L'], [1, 6, 7, 4, 'D'], [2, 7, 5, 2, 'L'], [0, 10, 9, 4, 'D'], [1, 11, 7, 2, 'L']] },
+                    fragment: { name: '午睡抱枕', art: [[0, 7, 9, 7, 'D'], [1, 8, 7, 5, 'L'], [2, 10, 2, 1, 'D'], [5, 10, 2, 1, 'D'], [3, 12, 3, 1, 'M']] },
+                    planner: { name: '睡眠紀錄表', art: [[0, 1, 9, 10, 'D'], [1, 2, 7, 8, 'L'], [2, 8, 1, 1, 'D'], [3, 7, 1, 1, 'D'], [4, 5, 1, 1, 'D'], [5, 6, 1, 1, 'D'], [6, 4, 1, 1, 'D'], [4, 11, 1, 3, 'D']] }
+                },
+                pool: [
+                    { key: 'moon', name: '月亮吊飾', art: [[4, 0, 1, 3, 'M'], [3, 3, 4, 1, 'D'], [2, 4, 2, 5, 'D'], [3, 9, 4, 1, 'D'], [6, 5, 1, 1, 'M'], [7, 7, 1, 1, 'M']] },
+                    { key: 'sheep', name: '綿羊玩偶', art: [[1, 7, 7, 5, 'D'], [2, 8, 5, 3, 'L'], [7, 6, 2, 3, 'D'], [2, 12, 1, 2, 'D'], [6, 12, 1, 2, 'D']] },
+                    { key: 'aroma', name: '香氛機', art: [[2, 9, 5, 5, 'D'], [3, 10, 3, 2, 'L'], [4, 6, 1, 2, 'M'], [3, 4, 1, 2, 'M'], [5, 2, 1, 2, 'M']] },
+                    { key: 'earplugs', name: '耳塞盒', art: [[1, 10, 7, 4, 'D'], [2, 11, 5, 2, 'L'], [2, 8, 2, 2, 'M'], [5, 8, 2, 2, 'M']] },
+                    { key: 'nightcap', name: '睡帽掛勾', art: [[4, 0, 1, 2, 'D'], [3, 2, 3, 2, 'D'], [2, 4, 5, 3, 'D'], [3, 5, 3, 1, 'L'], [1, 7, 7, 2, 'D'], [7, 9, 1, 2, 'D'], [7, 11, 2, 2, 'M']] }
+                ]
             }
         };
 
@@ -1882,10 +1941,13 @@
             { cats: ['learn', 'hobby'], name: '手作工作台', art: [[0, 5, 10, 2, 'D'], [1, 7, 1, 3, 'D'], [8, 7, 1, 3, 'D'], [1, 2, 3, 3, 'D'], [2, 3, 1, 1, 'L'], [6, 1, 2, 4, 'M']] },
             { cats: ['rest', 'social'], name: '火鍋暖桌', art: [[1, 6, 8, 2, 'D'], [2, 8, 1, 2, 'D'], [7, 8, 1, 2, 'D'], [3, 3, 4, 3, 'D'], [4, 4, 2, 1, 'L'], [4, 1, 1, 2, 'M'], [6, 0, 1, 2, 'M']] },
             { cats: ['learn', 'rest'], name: '午睡閱讀椅', art: [[1, 2, 2, 7, 'D'], [1, 6, 8, 2, 'D'], [7, 4, 2, 4, 'D'], [2, 8, 1, 2, 'D'], [7, 8, 1, 2, 'D'], [3, 3, 4, 3, 'D'], [4, 4, 2, 1, 'L']] },
-            { cats: ['hobby', 'social'], name: '卡拉OK舞台', art: [[0, 8, 10, 2, 'D'], [4, 1, 2, 3, 'D'], [5, 4, 1, 4, 'D'], [1, 2, 1, 2, 'M'], [8, 3, 1, 2, 'M'], [0, 1, 2, 1, 'M']] }
+            { cats: ['hobby', 'social'], name: '卡拉OK舞台', art: [[0, 8, 10, 2, 'D'], [4, 1, 2, 3, 'D'], [5, 4, 1, 4, 'D'], [1, 2, 1, 2, 'M'], [8, 3, 1, 2, 'M'], [0, 1, 2, 1, 'M']] },
+            { cats: ['sport', 'social'], name: '球隊置物櫃', art: [[0, 1, 10, 9, 'D'], [1, 2, 3, 7, 'L'], [6, 2, 3, 7, 'L'], [2, 4, 1, 1, 'D'], [7, 4, 1, 1, 'D'], [4, 2, 2, 7, 'M']] },
+            { cats: ['sleep', 'rest'], name: '星空帳篷', art: [[4, 1, 2, 1, 'D'], [3, 2, 4, 1, 'D'], [2, 3, 6, 2, 'D'], [1, 5, 8, 2, 'D'], [0, 7, 10, 2, 'D'], [4, 5, 2, 4, 'L'], [1, 0, 1, 1, 'M'], [8, 1, 1, 1, 'M']] },
+            { cats: ['sport', 'sleep'], name: '伸展瑜珈墊', art: [[0, 8, 10, 1, 'D'], [0, 7, 7, 1, 'M'], [7, 5, 3, 3, 'D'], [8, 6, 1, 1, 'L']] }
         ].map(c => ({ ...c, id: `combo_${c.cats.join('_')}` }));
 
-        const FURNITURE_COLLECTIBLE_TOTAL = MVP_CONFIG.CATEGORIES.length * (3 + 5) + FURNITURE_COMBOS.length; // 38
+        const FURNITURE_COLLECTIBLE_TOTAL = MVP_CONFIG.CATEGORIES.length * (3 + 5) + FURNITURE_COMBOS.length; // 57
 
         function getStyleItemId(cat, style) { return `${cat}_style_${style}`; }
         function getPoolItemId(cat, key) { return `${cat}_${key}`; }
@@ -2002,8 +2064,12 @@
                 const level = getFurnitureLevel(cycle.totalHoursByCategory[cat], thresholds);
                 if (level === 0) return '';
                 const slot = FURNITURE_SLOTS[cat];
-                const [w, h] = slot.row === 'back' ? [47, 26] : [57, 12];
+                const [w, h] = SLOT_VIEWBOX[slot.row];
                 const placed = getPlacedFurniture(cycle, cat, level);
+                // 牆面置物架：層板＋兩個支架
+                const shelf = slot.row === 'wall'
+                    ? `<rect x="0" y="14" width="${w}" height="1" fill="#0f380f"/><rect x="3" y="15" width="1" height="1" fill="#0f380f"/><rect x="${w - 4}" y="15" width="1" height="1" fill="#0f380f"/>`
+                    : '';
                 const items = placed.map((item, i) => {
                     if (!item) return '';
                     const [x, y] = slot.regions[i];
@@ -2013,7 +2079,7 @@
                 const names = placed.map(item => item ? item.name : '（待選擇）').join('、');
                 return `
                 <div class="slot-${cat}" title="${CATEGORY_META[cat].name}家具 Lv${level}：${names} (${cycle.totalHoursByCategory[cat]}h)">
-                    <svg width="${w * 2}" height="${h * 2}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${items}</svg>
+                    <svg width="${w * 2}" height="${h * 2}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${shelf}${items}</svg>
                 </div>`;
             }).join('');
         }
@@ -2029,18 +2095,19 @@
                     : `<rect x="4" y="7" width="2" height="2" fill="#306230" opacity="0.35"/>`;
                 return `<g transform="translate(${x} 0)"><title>${unlocked.includes(combo.id) ? combo.name : '未解鎖組合'}</title>${art}</g>`;
             }).join('');
-            return `<svg width="${65 * 2}" height="${11 * 2}" viewBox="0 0 65 11" shape-rendering="crispEdges">
-                ${cells}<rect x="0" y="10" width="65" height="1" fill="#0f380f"/></svg>`;
+            const shelfW = FURNITURE_COMBOS.length * 11 - 1;
+            return `<svg width="${shelfW * 2}" height="${11 * 2}" viewBox="0 0 ${shelfW} 11" shape-rendering="crispEdges">
+                ${cells}<rect x="0" y="10" width="${shelfW}" height="1" fill="#0f380f"/></svg>`;
         }
 
         // 單件家具預覽 (三選一卡片用)
         function renderFurniturePreviewSVG(category, itemId, scale = 5) {
             const item = findPoolItem(category, itemId);
-            const [w, h] = FURNITURE_SLOTS[category].row === 'back' ? [14, 13] : [9, 12];
+            const [w, h] = SLOT_PREVIEW_VIEWBOX[FURNITURE_SLOTS[category].row];
             return `<svg width="${w * scale}" height="${h * scale}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${pixelArt(item.art)}</svg>`;
         }
 
-        // 寵物紙娃娃渲染：蛋 / 基礎幼年體 / 4 種族底圖，超級變體再疊加氣質配件圖層 (皆為雙幀)
+        // 寵物紙娃娃渲染：蛋 / 基礎幼年體 / 6 種族底圖，超級變體再疊加氣質配件圖層 (皆為雙幀)
         // view = { stage, species, accessory }
         const SPECIES_BASE_SVG = {
             // 貓頭鷹 (learn)：耳羽 + 大圓眼
@@ -2084,7 +2151,30 @@
                 <rect x="10" y="4" width="1" height="1" fill="#9bbc0f"/>
                 <rect x="8" y="6" width="2" height="1" fill="#0f380f"/>
                 <rect x="3" y="7" width="1" height="4" fill="#0f380f"/>
-                <rect x="14" y="7" width="1" height="4" fill="#0f380f"/>`
+                <rect x="14" y="7" width="1" height="4" fill="#0f380f"/>`,
+            // 兔子 (sport)：長耳 + 圓臉
+            sport: `
+                <rect x="4" y="0" width="3" height="5" fill="#0f380f"/>
+                <rect x="5" y="1" width="1" height="3" fill="#9bbc0f"/>
+                <rect x="11" y="0" width="3" height="5" fill="#0f380f"/>
+                <rect x="12" y="1" width="1" height="3" fill="#9bbc0f"/>
+                <path d="M5 5h8v1h1v1h1v6h-1v1h-1v1h-8v-1h-1v-1h-1v-6h1v-1h1z" fill="#0f380f"/>
+                <path d="M5 6h8v1h1v6h-1v1h-8v-1h-1v-6h1z" fill="#9bbc0f"/>
+                <rect x="6" y="8" width="1" height="2" fill="#0f380f"/>
+                <rect x="11" y="8" width="1" height="2" fill="#0f380f"/>
+                <rect x="8" y="10" width="2" height="1" fill="#0f380f"/>
+                <rect x="8" y="12" width="2" height="1" fill="#306230"/>`,
+            // 無尾熊 (sleep)：大圓耳 + 大鼻子 + 瞇眼
+            sleep: `
+                <path d="M1 3h4v1h1v4h-1v1h-4v-1h-1v-4h1z" fill="#0f380f"/>
+                <rect x="1" y="5" width="3" height="2" fill="#9bbc0f"/>
+                <path d="M13 3h4v1h1v4h-1v1h-4v-1h-1v-4h1z" fill="#0f380f"/>
+                <rect x="14" y="5" width="3" height="2" fill="#9bbc0f"/>
+                <path d="M5 4h8v1h1v1h1v8h-1v1h-1v1h-8v-1h-1v-1h-1v-8h1v-1h1z" fill="#0f380f"/>
+                <path d="M5 5h8v1h1v8h-1v1h-8v-1h-1v-8h1z" fill="#9bbc0f"/>
+                <rect x="6" y="8" width="2" height="1" fill="#0f380f"/>
+                <rect x="10" y="8" width="2" height="1" fill="#0f380f"/>
+                <rect x="8" y="9" width="2" height="3" fill="#0f380f"/>`
         };
 
         // 頭部配件 (y 0~3) 與手持配件 (左側 x 0~2)
@@ -2093,6 +2183,8 @@
             rest: `<rect x="6" y="2" width="6" height="2" fill="#0f380f"/><rect x="7" y="2" width="4" height="1" fill="#9bbc0f"/>`,
             hobby: `<rect x="5" y="2" width="8" height="2" fill="#0f380f"/><rect x="8" y="1" width="2" height="1" fill="#0f380f"/>`,
             social: `<path d="M8 0h2v1h1v2h1v1h-6v-1h1v-2h1z" fill="#0f380f"/><rect x="8" y="2" width="1" height="1" fill="#9bbc0f"/>`,
+            sport: `<rect x="5" y="3" width="8" height="1" fill="#0f380f"/><rect x="7" y="3" width="4" height="1" fill="#306230"/><rect x="13" y="4" width="1" height="2" fill="#0f380f"/>`,
+            sleep: `<path d="M6 1h5v1h1v1h1v1h-8v-1h1z" fill="#0f380f"/><rect x="7" y="2" width="1" height="1" fill="#9bbc0f"/><rect x="13" y="0" width="2" height="2" fill="#0f380f"/>`,
             crown: `<path d="M5 1h1v1h1v-1h1v1h2v-1h1v1h1v-1h1v3h-8z" fill="#0f380f"/><rect x="8" y="3" width="2" height="1" fill="#9bbc0f"/>`,
             balanced: `<rect x="5" y="0" width="8" height="1" fill="#0f380f"/><rect x="4" y="1" width="1" height="1" fill="#0f380f"/><rect x="13" y="1" width="1" height="1" fill="#0f380f"/>`
         };
@@ -2101,6 +2193,8 @@
             rest: `<rect x="0" y="11" width="2" height="3" fill="#0f380f"/><rect x="0" y="12" width="1" height="1" fill="#9bbc0f"/><rect x="1" y="9" width="1" height="1" fill="#0f380f"/>`,
             hobby: `<rect x="1" y="8" width="1" height="6" fill="#0f380f"/><rect x="0" y="7" width="2" height="2" fill="#0f380f"/>`,
             social: `<rect x="0" y="4" width="2" height="3" fill="#0f380f"/><rect x="0" y="5" width="1" height="1" fill="#9bbc0f"/><rect x="1" y="7" width="1" height="6" fill="#0f380f"/>`,
+            sport: `<rect x="0" y="9" width="1" height="3" fill="#0f380f"/><rect x="1" y="10" width="1" height="1" fill="#0f380f"/><rect x="2" y="9" width="1" height="3" fill="#0f380f"/>`,
+            sleep: `<rect x="0" y="10" width="3" height="3" fill="#0f380f"/><rect x="0" y="11" width="2" height="1" fill="#9bbc0f"/>`,
             balanced: `<rect x="1" y="7" width="1" height="3" fill="#0f380f"/><rect x="0" y="8" width="3" height="1" fill="#0f380f"/>`
         };
 
@@ -2211,7 +2305,9 @@
             rest:   { x: -105, y: -6, icon: 'Zzz' },
             social: { x: 105,  y: -6, icon: '♥' },
             learn:  { x: -105, y: 22, icon: '📖' },
-            hobby:  { x: 105,  y: 22, icon: '♪' }
+            hobby:  { x: 105,  y: 22, icon: '♪' },
+            sport:  { x: -105, y: -34, icon: '💪' },
+            sleep:  { x: 105,  y: -34, icon: '🌙' }
         };
         let petUseTimer = null;
 
@@ -2607,10 +2703,10 @@
         function formatCategoryBreakdown(entry, separator, short) {
             return MVP_CONFIG.CATEGORIES.map(cat => {
                 const name = short ? CATEGORY_META[cat].name[0] : CATEGORY_META[cat].name;
-                const lv = entry.furnitureLevels ? ` Lv${entry.furnitureLevels[cat]}` : '';
-                const style = entry.furniture && entry.furniture[cat].style
+                const lv = entry.furnitureLevels ? ` Lv${entry.furnitureLevels[cat] || 0}` : '';
+                const style = entry.furniture && entry.furniture[cat] && entry.furniture[cat].style
                     ? `(${FURNITURE_STYLES[entry.furniture[cat].style].slice(0, 2)})` : '';
-                return `${name} ${entry.categoryBreakdown[cat]}h${lv}${style}`;
+                return `${name} ${entry.categoryBreakdown[cat] || 0}h${lv}${style}`;
             }).join(separator);
         }
 
