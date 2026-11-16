@@ -1,0 +1,2808 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AFTER-WORK GOTCHI | 下班時間紀錄與微規劃養成 MVP</title>
+    <!-- 引入復古像素字體 (Pure Vanilla CSS + Google Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           1. 色彩變數與掌機主題設定 (Pure CSS, Zero External Framework)
+           ========================================================================== */
+        :root {
+            /* 掌機外殼預設：復古奶油白 */
+            --shell-main: #f4efe6;
+            --shell-light: #ffffff;
+            --shell-shadow: #d5ccb8;
+            --shell-border: #b8ae99;
+            --bezel-bg: #2d3138;
+            --btn-color: #e06d53;
+            --btn-shadow: #a8432d;
+            
+            /* 經典單色點陣綠底 LCD 調色盤 */
+            --lcd-bg: #9bbc0f;
+            --lcd-light: #8bac0f;
+            --lcd-dark: #306230;
+            --lcd-darkest: #0f380f;
+        }
+
+        body.theme-mint {
+            --shell-main: #a8dcd1;
+            --shell-light: #d4f2eb;
+            --shell-shadow: #7ab5a8;
+            --shell-border: #5c9689;
+            --bezel-bg: #263238;
+            --btn-color: #ffca3a;
+            --btn-shadow: #c79616;
+        }
+
+        body.theme-lavender {
+            --shell-main: #d8c7eb;
+            --shell-light: #efe6fa;
+            --shell-shadow: #b09bc7;
+            --shell-border: #8e78a6;
+            --bezel-bg: #2a2438;
+            --btn-color: #ff7eb9;
+            --btn-shadow: #c74c84;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'DotGothic16', monospace, sans-serif;
+            background-color: #1a1c20;
+            background-image: 
+                radial-gradient(#2c3038 1px, transparent 1px),
+                radial-gradient(#2c3038 1px, #1a1c20 1px);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+            color: #e2e8f0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 整體版面：左側測試面板 + 右側掌機，依視窗大小等比縮放以免出現滾軸 */
+        .app-layout {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 28px;
+            padding: 12px;
+            flex-shrink: 0;
+            transform-origin: center center;
+        }
+
+        .device-column {
+            width: 430px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 14px;
+        }
+
+        .font-en {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* ==========================================================================
+           2. 頂部外殼與音效快捷控制列
+           ========================================================================== */
+        .top-utility-bar {
+            width: 100%;
+            max-width: 430px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 0 6px;
+            font-size: 12px;
+        }
+
+        .theme-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+        }
+
+        .theme-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #94a3b8;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .theme-dot:hover { transform: scale(1.15); }
+
+        .sound-btn {
+            background: #272b33;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sound-btn:hover { background: #333944; }
+
+        /* ==========================================================================
+           3. 蛋形掌機外殼 (Tamagotchi Egg Shell)
+           ========================================================================== */
+        .tamagotchi-shell {
+            width: 100%;
+            max-width: 430px;
+            background: radial-gradient(circle at 30% 20%, var(--shell-light) 0%, var(--shell-main) 55%, var(--shell-shadow) 100%);
+            border-radius: 46% 46% 44% 44% / 38% 38% 35% 35%;
+            padding: 26px 22px 34px 22px;
+            box-shadow: 
+                0 24px 48px rgba(0, 0, 0, 0.6),
+                inset 0 6px 12px rgba(255, 255, 255, 0.85),
+                inset 0 -10px 20px rgba(0, 0, 0, 0.2),
+                0 0 0 4px var(--shell-border);
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .keychain-loop {
+            width: 34px;
+            height: 22px;
+            background: var(--shell-shadow);
+            border: 4px solid var(--shell-border);
+            border-radius: 16px 16px 6px 6px;
+            margin: -40px auto 10px auto;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .keychain-hole {
+            width: 12px;
+            height: 8px;
+            background: #1a1c20;
+            border-radius: 50%;
+            margin: 3px auto;
+        }
+
+        .shell-brand {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            color: rgba(0, 0, 0, 0.65);
+            font-weight: bold;
+        }
+
+        /* ==========================================================================
+           4. 單色點陣綠底 LCD 螢幕與網格紋理
+           ========================================================================== */
+        .lcd-bezel {
+            background-color: var(--bezel-bg);
+            border-radius: 26px 26px 34px 34px;
+            padding: 12px 12px 16px 12px;
+            box-shadow: 
+                inset 0 4px 10px rgba(0, 0, 0, 0.75),
+                0 2px 4px rgba(255, 255, 255, 0.45);
+        }
+
+        .bezel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 8px 6px 8px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .lcd-screen {
+            background-color: var(--lcd-bg);
+            color: var(--lcd-darkest);
+            border: 4px solid #16191d;
+            border-radius: 10px;
+            height: 364px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 3px 3px 8px rgba(15, 56, 15, 0.35);
+            image-rendering: pixelated;
+        }
+
+        /* 細微像素點陣格線覆蓋層 */
+        .lcd-grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(to right, rgba(15, 56, 15, 0.065) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(15, 56, 15, 0.065) 1px, transparent 1px);
+            background-size: 3px 3px;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        /* ==========================================================================
+           5. LCD 內部區塊配置
+           ========================================================================== */
+        /* 頂部狀態列 */
+        .lcd-top-bar {
+            padding: 6px 8px 5px 8px;
+            border-bottom: 2px solid var(--lcd-darkest);
+            background-color: rgba(139, 172, 15, 0.55);
+            z-index: 10;
+        }
+
+        .lcd-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .badge-tag {
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+            padding: 1px 5px;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+
+        .yesterday-badge {
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+            border: 1px solid var(--lcd-darkest);
+            padding: 1px 5px;
+            font-size: 10px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            animation: blinkPulse 1.4s infinite;
+        }
+
+        .day-type-btn {
+            background: transparent;
+            color: var(--lcd-darkest);
+            border: 1.5px solid var(--lcd-darkest);
+            padding: 0 4px;
+            font-size: 10px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .day-type-btn:hover:not(:disabled) {
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+        }
+        .day-type-btn:disabled { opacity: 0.55; cursor: default; }
+
+        /* 作息設定面板：覆蓋整個 LCD (含投餵列) */
+        .settings-panel {
+            position: absolute;
+            inset: 0;
+            z-index: 45;
+            background: var(--lcd-bg);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            font-size: 11px;
+        }
+        .settings-intro {
+            font-size: 11px;
+            line-height: 1.45;
+            text-align: center;
+            border: 1.5px dashed var(--lcd-darkest);
+            padding: 5px;
+        }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .settings-label { font-weight: bold; }
+        .settings-select {
+            flex: 1;
+            min-width: 0;
+            font-family: inherit;
+            font-size: 11px;
+            color: var(--lcd-darkest);
+            background: var(--lcd-light);
+            border: 1.5px solid var(--lcd-darkest);
+            padding: 2px;
+        }
+        .day-chip-row { display: flex; gap: 3px; flex-wrap: wrap; }
+        .day-chip {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            border: 1.5px solid var(--lcd-darkest);
+            padding: 1px 4px;
+            cursor: pointer;
+        }
+        .day-chip input { accent-color: #0f380f; margin: 0; }
+        .settings-preview {
+            border: 2px solid var(--lcd-darkest);
+            background: rgba(139, 172, 15, 0.55);
+            padding: 5px;
+            line-height: 1.5;
+            text-align: center;
+        }
+        .settings-note { font-size: 10px; text-align: center; }
+        .settings-save {
+            margin-top: auto;
+            padding: 5px;
+            font-size: 12px;
+        }
+        .settings-save:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        @keyframes blinkPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+        }
+
+        /* 12格時間進度條 (每格 0.5h = 6.0h) */
+        .time-meter-bar {
+            width: 100%;
+            height: 10px;
+            border: 2px solid var(--lcd-darkest);
+            background: var(--lcd-bg);
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1px;
+            padding: 1px;
+        }
+
+        .meter-cell-filled { background: var(--lcd-darkest); }
+        .meter-cell-fog {
+            background: repeating-linear-gradient(
+                45deg,
+                var(--lcd-darkest),
+                var(--lcd-darkest) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+        }
+        .meter-cell-planned {
+            background: var(--lcd-dark);
+            box-shadow: inset 0 0 0 1px var(--lcd-bg);
+        }
+        .meter-cell-empty { background: rgba(139, 172, 15, 0.35); }
+
+        /* 中央主舞台區 */
+        .lcd-stage {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 房間背景元素：地板線、牆壁踢腳板與窗戶 */
+        .room-bg-wall {
+            position: absolute;
+            inset-inline: 0;
+            bottom: 34px;
+            height: 2px;
+            background: var(--lcd-darkest);
+            pointer-events: none;
+        }
+        .room-bg-floor {
+            position: absolute;
+            inset-inline: 0;
+            bottom: 8px;
+            height: 2px;
+            background: rgba(15, 56, 15, 0.35);
+            pointer-events: none;
+        }
+        .room-window {
+            position: absolute;
+            top: 8px;
+            left: 10px;
+            width: 40px;
+            height: 36px;
+            border: 2px solid var(--lcd-darkest);
+            background: rgba(139, 172, 15, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        /* 狀態模式橫幅與時長切換鈕 */
+        .stage-hud-top {
+            position: relative;
+            z-index: 22;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 6px 8px 0 56px;
+        }
+
+        .mode-status-pill {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border: 1.5px solid var(--lcd-darkest);
+            background: rgba(155, 188, 15, 0.92);
+            line-height: 1.25;
+        }
+
+        .unit-toggle-btn {
+            border: 2px solid var(--lcd-darkest);
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+            padding: 3px 6px;
+            font-size: 9px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 rgba(15, 56, 15, 0.35);
+        }
+        .unit-toggle-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+
+        /* 迷霧遮罩層 (依未認領時數動態調整濃度) */
+        .fog-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 18;
+            transition: opacity 0.35s ease;
+            background-image: radial-gradient(rgba(15, 56, 15, 0.28) 1.5px, transparent 1.5px);
+            background-size: 6px 6px;
+        }
+
+        /* 特效層：時間小幽靈 & 微規劃小星星 */
+        .effect-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 25;
+        }
+
+        .floating-ghost {
+            position: absolute;
+            top: 44px;
+            left: 16px;
+            animation: ghostDrift 3.2s infinite ease-in-out;
+        }
+
+        .floating-star-left {
+            position: absolute;
+            top: 42px;
+            left: 18px;
+            animation: starTwinkle 1.6s infinite ease-in-out;
+        }
+        .floating-star-right {
+            position: absolute;
+            top: 46px;
+            right: 18px;
+            animation: starTwinkle 1.6s infinite ease-in-out 0.8s;
+        }
+
+        @keyframes ghostDrift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(8px, -6px); }
+        }
+        @keyframes starTwinkle {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.82); opacity: 0.65; }
+        }
+
+        /* ==========================================================================
+           6. 家具固定 4 座標槽位 (原地升級、永不重疊)
+           ========================================================================== */
+        .furniture-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 12;
+        }
+
+        /* 後排 (靠牆，可畫較高)：站在牆線上；前排 (地板)：只放矮物件，不擋寵物 */
+        .slot-rest   { position: absolute; left: 6px;   bottom: 34px; } /* 左後：rest */
+        .slot-social { position: absolute; right: 6px;  bottom: 34px; } /* 右後：social */
+        .slot-learn  { position: absolute; left: 6px;   bottom: 10px; } /* 左前：learn */
+        .slot-hobby  { position: absolute; right: 6px;  bottom: 10px; } /* 右前：hobby */
+        .slot-rest svg, .slot-social svg, .slot-learn svg, .slot-hobby svg { display: block; }
+
+        @keyframes popIn {
+            0% { transform: scale(0.4) translateY(8px); opacity: 0; }
+            75% { transform: scale(1.1) translateY(-2px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .anim-pop { animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        /* 疊加家具：只讓新增的那一件物件彈出 */
+        g.anim-pop { transform-box: fill-box; transform-origin: center bottom; }
+
+        /* 中央牆面展示架 (組合家具)：位於 HUD 下方、寵物上方 */
+        .combo-shelf {
+            position: absolute;
+            top: 34px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 11;
+            pointer-events: auto;
+        }
+        .combo-shelf svg { display: block; }
+
+        /* 寵物使用家具：整隻滑向角落 */
+        .pet-mover {
+            position: relative;
+            transition: transform 0.45s ease-in-out;
+        }
+        .pet-action-icon {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            background: var(--lcd-bg);
+            border: 1.5px solid var(--lcd-darkest);
+            padding: 0 4px;
+            animation: starTwinkle 0.8s infinite ease-in-out;
+            white-space: nowrap;
+        }
+
+        /* 三選一卡片 */
+        .choice-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            flex: 1;
+        }
+        .choice-card {
+            border: 2px solid var(--lcd-darkest);
+            background: var(--lcd-light);
+            color: var(--lcd-darkest);
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 6px 2px;
+            box-shadow: 2px 2px 0 rgba(15, 56, 15, 0.35);
+        }
+        .choice-card:hover { background: var(--lcd-bg); transform: translateY(-1px); }
+        .choice-preview { min-height: 42px; display: flex; align-items: flex-end; }
+        .choice-name { font-size: 11px; font-weight: bold; }
+        .choice-tag { font-size: 9px; border: 1px solid var(--lcd-darkest); padding: 0 3px; }
+
+        /* ==========================================================================
+           7. 中央寵物舞台與氣泡對話
+           ========================================================================== */
+        .pet-center-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 20;
+            padding-bottom: 14px;
+        }
+
+        .speech-bubble {
+            background: var(--lcd-bg);
+            border: 2px solid var(--lcd-darkest);
+            box-shadow: 2px 2px 0 var(--lcd-darkest);
+            padding: 2px 7px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            max-width: 90%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pet-sprite-box {
+            cursor: pointer;
+            filter: drop-shadow(2px 2px 0 rgba(15, 56, 15, 0.25));
+            transition: transform 0.1s;
+        }
+        .pet-sprite-box:active { transform: scale(0.94); }
+
+        @keyframes riceballFly {
+            0% { transform: translate(50px, 35px) scale(1); opacity: 1; }
+            60% { transform: translate(0, -10px) scale(1.15); opacity: 1; }
+            100% { transform: translate(0, 4px) scale(0.2); opacity: 0; }
+        }
+        .feeding-orb {
+            position: absolute;
+            pointer-events: none;
+            z-index: 30;
+            animation: riceballFly 0.7s forwards ease-out;
+        }
+
+        /* ==========================================================================
+           8. 次要視圖面板 (今日紀錄明細 / 圖鑑 / 週結算彈窗)
+           ========================================================================== */
+        .sub-view-panel {
+            position: absolute;
+            inset: 0;
+            background: var(--lcd-bg);
+            z-index: 32;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hidden { display: none !important; }
+
+        .sub-view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--lcd-darkest);
+            padding-bottom: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .pixel-mini-btn {
+            border: 1.5px solid var(--lcd-darkest);
+            background: var(--lcd-light);
+            color: var(--lcd-darkest);
+            padding: 2px 6px;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .pixel-mini-btn:hover {
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+        }
+
+        .scroll-list {
+            flex: 1;
+            overflow-y: auto;
+            margin: 6px 0;
+            padding-right: 2px;
+            font-size: 10px;
+        }
+        .scroll-list::-webkit-scrollbar { width: 4px; }
+        .scroll-list::-webkit-scrollbar-thumb { background: var(--lcd-darkest); }
+
+        .record-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 5px;
+            border: 1px solid var(--lcd-darkest);
+            background: rgba(139, 172, 15, 0.45);
+            margin-bottom: 4px;
+        }
+
+        .ency-card {
+            border: 2px solid var(--lcd-darkest);
+            background: rgba(139, 172, 15, 0.45);
+            padding: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ==========================================================================
+           9. 底部 4 顆活動投餵快捷列
+           ========================================================================== */
+        .lcd-feed-dock {
+            padding: 6px;
+            border-top: 2px solid var(--lcd-darkest);
+            background: rgba(139, 172, 15, 0.65);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            z-index: 25;
+        }
+
+        .feed-cat-btn {
+            border: 2px solid var(--lcd-darkest);
+            background: var(--lcd-light);
+            color: var(--lcd-darkest);
+            padding: 4px 2px;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            transition: transform 0.06s;
+        }
+        .feed-cat-btn:hover:not(:disabled) {
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+        }
+        .feed-cat-btn:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+        .feed-cat-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: rgba(139, 172, 15, 0.3);
+        }
+        .feed-cat-title {
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .feed-cat-sub {
+            font-size: 9px;
+            opacity: 0.85;
+        }
+
+        /* ==========================================================================
+           10. 掌機實體三鍵 (A / B / C)
+           ========================================================================== */
+        .physical-controls {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .phys-btn-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .phys-btn-col:nth-child(2) {
+            margin-top: 12px; /* 經典中間按鈕下沉弧度 */
+        }
+
+        .phys-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45), transparent 55%), var(--btn-color);
+            border: 2px solid rgba(0,0,0,0.28);
+            box-shadow: 
+                0 5px 0 var(--btn-shadow),
+                0 8px 14px rgba(0,0,0,0.38),
+                inset 0 2px 3px rgba(255,255,255,0.5);
+            cursor: pointer;
+            color: rgba(255,255,255,0.92);
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.06s, box-shadow 0.06s;
+        }
+        .phys-btn:active, .phys-btn.is-pressed {
+            transform: translateY(4px);
+            box-shadow: 
+                0 1px 0 var(--btn-shadow),
+                0 3px 6px rgba(0,0,0,0.35);
+        }
+
+        .phys-btn-label {
+            margin-top: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        /* ==========================================================================
+           11. 底部「規格驗證模擬器」卡片
+           ========================================================================== */
+        .simulator-card {
+            width: 320px;
+            flex-shrink: 0;
+            background: #22262e;
+            border: 1px solid #383f4d;
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 12px;
+            color: #cbd5e1;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+        }
+
+        .sim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #333a47;
+        }
+        .sim-title {
+            font-weight: bold;
+            color: #fbbf24;
+            font-size: 13px;
+        }
+        .sim-clock-badge {
+            background: #14171c;
+            border: 1px solid #475569;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #93c5fd;
+        }
+
+        .sim-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .sim-btn {
+            background: #2e3440;
+            border: 1px solid #4c566a;
+            color: #eceff4;
+            padding: 7px 8px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .sim-btn:hover {
+            background: #3b4252;
+            border-color: #88c0d0;
+        }
+        .sim-btn.danger:hover {
+            border-color: #f87171;
+            color: #fca5a5;
+        }
+
+        .sim-specs-note {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #333a47;
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="appLayout" class="app-layout">
+        <!-- 左側規格驗證模擬器 -->
+        <section class="simulator-card">
+            <div class="sim-header">
+                <span class="sim-title">🧪 規格驗證模擬器 (測試邊界條件)</span>
+                <span id="simClockBadge" class="sim-clock-badge">目前基準: 真實時間</span>
+            </div>
+            <div class="sim-grid">
+                <button class="sim-btn" onclick="simAdvanceHours(2)">
+                    ⏩ 模擬時間推進 +2.0h<br>
+                    <span style="font-size:10px; color:#94a3b8;">測試待認領濃霧與小幽靈 (≥1.5h)</span>
+                </button>
+                <button class="sim-btn" onclick="simSetupYesterday()">
+                    📅 生成昨日未滿額度 (2.0h)<br>
+                    <span style="font-size:10px; color:#94a3b8;">測試同輪「補登昨日」寬容徽章</span>
+                </button>
+                <button class="sim-btn" onclick="simNextDay()">
+                    🌙 模擬隔日結束時間 (時間池流逝滿)<br>
+                    <span style="font-size:10px; color:#94a3b8;">多日累積測試種族鎖定 / 超級變體</span>
+                </button>
+                <button class="sim-btn" onclick="simTriggerCycleRollover()">
+                    🏆 模擬跨雙週結算寫入圖鑑<br>
+                    <span style="font-size:10px; color:#94a3b8;">推進 14 天，測試結算彈窗與新輪重置</span>
+                </button>
+                <button class="sim-btn danger" onclick="simHardReset()">
+                    🗑️ 重置所有本地資料<br>
+                    <span style="font-size:10px; color:#94a3b8;">清空作息與資料，重回首次設定</span>
+                </button>
+            </div>
+            <div class="sim-specs-note">
+                • <strong>雙模式</strong>：<code>已分配 &lt; 已流逝</code> 寫入 <code>retroactive</code>；否則 <code>planned</code>。<br>
+                • <strong>門檻</strong>＝雙週理論時間池 × 比例：家具 <code>1.5%</code> / <code>7%</code>；破蛋 <code>5%</code> / 鎖定 <code>15%</code> / 超級 <code>30%</code>。<br>
+                • <strong>全能光環</strong>：四類各佔已認領 <code>≥15%</code>。<br>
+                • <strong>本輪門檻</strong>：<span id="simThresholdNote">--</span>
+            </div>
+        </section>
+
+        <div class="device-column">
+            <!-- 頂部外殼換色與音效控制列 -->
+            <div class="top-utility-bar">
+                <div class="theme-picker">
+                    <span>外殼配色:</span>
+                    <button class="theme-dot" style="background:#f4efe6;" onclick="setShellTheme('cream')" title="復古奶油白"></button>
+                    <button class="theme-dot" style="background:#a8dcd1;" onclick="setShellTheme('mint')" title="薄荷蘇打綠"></button>
+                    <button class="theme-dot" style="background:#d8c7eb;" onclick="setShellTheme('lavender')" title="薰衣草淡紫"></button>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button class="sound-btn" onclick="openSettingsPanel(false)" title="修改平日 / 假日作息 (下一輪生效)">⚙ 作息設定</button>
+                    <button id="soundToggleBtn" class="sound-btn" onclick="toggleSound()">
+                        <span id="soundIcon">🔊</span>
+                        <span id="soundLabel">音效開啟</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 蛋形掌機本體 -->
+            <main class="tamagotchi-shell">
+                <div class="keychain-loop">
+                    <div class="keychain-hole"></div>
+                </div>
+                <div class="shell-brand font-en">★ AFTER-WORK GOTCHI ★</div>
+
+                <!-- 螢幕深色邊框 -->
+                <div class="lcd-bezel">
+                    <div class="bezel-header">
+                        <span id="bezelCycleDisplay">CYCLE: --</span>
+                        <span id="bezelTimeDisplay" class="font-en">18:00</span>
+                    </div>
+
+                    <!-- 單色點陣綠底 LCD 螢幕 -->
+                    <div class="lcd-screen">
+                        <div class="lcd-grid-overlay"></div>
+
+                        <!-- 1. 頂部狀態列 -->
+                        <header class="lcd-top-bar">
+                            <div class="lcd-top-row">
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span id="logicalDateDisplay">2026-11-14</span>
+                                    <button id="dayTypeBtn" class="day-type-btn" onclick="toggleDayType()" title="切換今日休假 / 今天上班">平日</button>
+                                    <button id="yesterdayBtn" class="yesterday-badge hidden" onclick="toggleYesterdayView()" title="點擊補登昨日未滿額度">
+                                        補登昨日
+                                    </button>
+                                </div>
+                                <span id="petStageBadge" class="badge-tag">蛋期 0.0h</span>
+                                <span id="dailyQuotaText">0.0/6.0h</span>
+                            </div>
+                            <!-- 12格時間能量條 (已認領 / 待認領迷霧 / 預支規劃 / 剩餘，每格 = 當日時間池 ÷ 12) -->
+                            <div id="timeMeterBar" class="time-meter-bar"></div>
+                        </header>
+
+                        <!-- 2. 中央房間舞台與彈出子面板 -->
+                        <section class="lcd-stage">
+                            <!-- 背景房間線條與窗戶 -->
+                            <div class="room-bg-wall"></div>
+                            <div class="room-bg-floor"></div>
+                            <div class="room-window">
+                                <svg width="24" height="22" viewBox="0 0 12 11" shape-rendering="crispEdges">
+                                    <rect x="5" y="0" width="2" height="11" fill="#0f380f"/>
+                                    <rect x="0" y="5" width="12" height="1" fill="#0f380f"/>
+                                    <rect x="2" y="2" width="1" height="1" fill="#0f380f"/>
+                                    <rect x="9" y="8" width="1" height="1" fill="#0f380f"/>
+                                </svg>
+                            </div>
+
+                            <!-- 頂部 HUD：模式狀態提示 & 時長單位切換鈕 -->
+                            <div class="stage-hud-top">
+                                <div id="modeStatusPill" class="mode-status-pill">
+                                    同步晴朗狀態 (已流逝 0.0h)
+                                </div>
+                                <button id="unitToggleBtn" class="unit-toggle-btn font-en" onclick="cycleUnitDuration()" title="點擊或按 A 鍵切換單次投餵時長">
+                                    +0.5h
+                                </button>
+                            </div>
+
+                            <!-- 迷霧濃度遮罩 -->
+                            <div id="fogOverlay" class="fog-overlay" style="opacity:0;"></div>
+
+                            <!-- 雙幀動畫特效層：時間小幽靈 / 微規劃小星星 -->
+                            <div id="effectLayer" class="effect-layer"></div>
+
+                            <!-- 家具固定 4 座標槽位 (逐階疊加、不重疊) -->
+                            <div id="furnitureLayer" class="furniture-layer"></div>
+                            <!-- 中央牆面展示架：跨類組合家具 -->
+                            <div id="comboShelf" class="combo-shelf"></div>
+
+                            <!-- 中央寵物舞台 -->
+                            <div class="pet-center-stage">
+                                <div id="petSpeechBubble" class="speech-bubble">
+                                    下班啦！點擊下方按鈕認領時間吧～
+                                </div>
+                                <div id="petMover" class="pet-mover">
+                                    <div id="petActionIcon" class="pet-action-icon hidden"></div>
+                                    <div id="petSpriteBox" class="pet-sprite-box" onclick="onPetClick()" title="點擊與電子雞互動"></div>
+                                </div>
+                                <div id="feedingOrbContainer"></div>
+                            </div>
+
+                            <!-- 子面板 A：今日紀錄明細 (按 C 鍵切換) -->
+                            <div id="recordsPanel" class="sub-view-panel hidden">
+                                <div class="sub-view-header">
+                                    <span id="recordsPanelTitle">📋 今日時間明細 (2026-11-14)</span>
+                                    <button class="pixel-mini-btn" onclick="closeAllSubPanels()">✕ 返回</button>
+                                </div>
+                                <div id="recordsListContainer" class="scroll-list"></div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #0f380f; padding-top:4px; font-size:10px;">
+                                    <span id="cycleBreakdownMini">本輪累計: 0.0h</span>
+                                    <button class="pixel-mini-btn" onclick="undoLastRecord()">↩ 撤銷最後一筆</button>
+                                </div>
+                            </div>
+
+                            <!-- 子面板 B：歷史進化圖鑑 (按 B 鍵切換) -->
+                            <div id="encyclopediaPanel" class="sub-view-panel hidden">
+                                <div class="sub-view-header">
+                                    <span>📖 週期進化圖鑑 (<span id="encyCount">0</span>)</span>
+                                    <button class="pixel-mini-btn" onclick="closeAllSubPanels()">✕ 返回</button>
+                                </div>
+                                <div id="encyclopediaListContainer" class="scroll-list"></div>
+                                <div style="font-size:9px; text-align:center; border-top:1px solid #0f380f; padding-top:3px;">
+                                    每 14 天跨入新雙週時自動結算並孵化新蛋
+                                </div>
+                            </div>
+
+                            <!-- 子面板 C：雙週結算彈窗 (自動觸發) -->
+                            <div id="settlementModal" class="sub-view-panel hidden" style="z-index:38;">
+                                <div class="sub-view-header">
+                                    <span>🎉 週期結算完成！收錄圖鑑</span>
+                                    <button class="pixel-mini-btn" onclick="closeSettlementModal()">開始新週</button>
+                                </div>
+                                <div id="settlementBody" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:6px;">
+                                </div>
+                                <button class="pixel-mini-btn" style="width:100%; padding:5px; font-size:11px;" onclick="closeSettlementModal()">
+                                    🥚 孵化本輪新電子雞
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- 3. 底部 4 顆活動投餵快捷鍵 -->
+                        <footer class="lcd-feed-dock">
+                            <button id="btn-cat-learn" class="feed-cat-btn" onclick="feedCategory('learn')">
+                                <span class="feed-cat-title">📚學習</span>
+                                <span id="sub-learn" class="feed-cat-sub">0.0h</span>
+                            </button>
+                            <button id="btn-cat-rest" class="feed-cat-btn" onclick="feedCategory('rest')">
+                                <span class="feed-cat-title">☕休息</span>
+                                <span id="sub-rest" class="feed-cat-sub">0.0h</span>
+                            </button>
+                            <button id="btn-cat-hobby" class="feed-cat-btn" onclick="feedCategory('hobby')">
+                                <span class="feed-cat-title">🎨興趣</span>
+                                <span id="sub-hobby" class="feed-cat-sub">0.0h</span>
+                            </button>
+                            <button id="btn-cat-social" class="feed-cat-btn" onclick="feedCategory('social')">
+                                <span class="feed-cat-title">💬社交</span>
+                                <span id="sub-social" class="feed-cat-sub">0.0h</span>
+                            </button>
+                        </footer>
+
+                        <!-- Lv4 / Lv5 家具三選一面板 (必須選一件)，覆蓋整個 LCD -->
+                        <div id="choicePanel" class="settings-panel hidden">
+                            <div class="sub-view-header">
+                                <span id="choiceTitle">選一件家具</span>
+                            </div>
+                            <div class="settings-intro">挑一件擺進角落！選過的家具會收進家具圖鑑，之後還能再選到～</div>
+                            <div id="choiceCards" class="choice-cards"></div>
+                            <div id="choiceRemaining" class="settings-note"></div>
+                        </div>
+
+                        <!-- 作息設定面板 (首次進入必填 / 之後修改下一輪生效)，覆蓋整個 LCD -->
+                        <div id="settingsPanel" class="settings-panel hidden">
+                            <div class="sub-view-header">
+                                <span>⚙ 作息設定</span>
+                                <button id="settingsCloseBtn" class="pixel-mini-btn" onclick="closeSettingsPanel()">✕ 返回</button>
+                            </div>
+                            <div id="settingsIntro" class="settings-intro">
+                                歡迎！先告訴我你通常什麼時候有空，<br>我會依此計算你的雙週時間池～
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">平日</span>
+                                <select id="set-workday-start" class="settings-select" onchange="renderSettingsPreview()"></select>
+                                <span>～</span>
+                                <select id="set-workday-end" class="settings-select" onchange="renderSettingsPreview()"></select>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">假日</span>
+                                <select id="set-holiday-start" class="settings-select" onchange="renderSettingsPreview()"></select>
+                                <span>～</span>
+                                <select id="set-holiday-end" class="settings-select" onchange="renderSettingsPreview()"></select>
+                            </div>
+                            <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:3px;">
+                                <span class="settings-label">固定休假日（可再按「今日休假」臨時切換）</span>
+                                <div id="set-holiday-days" class="day-chip-row"></div>
+                            </div>
+                            <div id="settingsPreview" class="settings-preview"></div>
+                            <div id="settingsNextCycleNote" class="settings-note">※ 修改將於下一輪雙週生效</div>
+                            <button id="settingsSaveBtn" class="pixel-mini-btn settings-save" onclick="saveSettings()">✔ 確認作息</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 掌機實體三鍵 (A / B / C) -->
+                <div class="physical-controls">
+                    <div class="phys-btn-col">
+                        <button id="physBtnA" class="phys-btn font-en" onclick="pressPhysicalButton('A')" title="A鍵：切換單次投餵時長 (+0.5h / +1.0h / +2.0h)">A</button>
+                        <span class="phys-btn-label">切時長</span>
+                    </div>
+                    <div class="phys-btn-col">
+                        <button id="physBtnB" class="phys-btn font-en" onclick="pressPhysicalButton('B')" title="B鍵：開啟歷史進化圖鑑">B</button>
+                        <span class="phys-btn-label">圖鑑</span>
+                    </div>
+                    <div class="phys-btn-col">
+                        <button id="physBtnC" class="phys-btn font-en" onclick="pressPhysicalButton('C')" title="C鍵：查看今日時間紀錄明細">C</button>
+                        <span class="phys-btn-label">明細</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. 系統常數配置 MVP_CONFIG (嚴格對照規格書)
+           ========================================================================== */
+        const MVP_CONFIG = {
+            DAY_BOUNDARY_HOUR: 4,         // 邏輯換日線（凌晨 04:00 前仍歸屬前一日深夜）
+            CYCLE_DAYS: 14,               // 養成週期長度（14 天雙週制）
+            CYCLE_ANCHOR_MONDAY: '2026-11-09', // 雙週標準起算基準週一（此輪為 C001）
+
+            // 預設作息（分鐘，自邏輯日 00:00 起算；結束最晚 28:00 = 隔日 04:00）
+            DEFAULT_SCHEDULE: {
+                workday: { startMin: 18 * 60, endMin: 24 * 60 }, // 平日 18:00～24:00
+                holiday: { startMin: 10 * 60, endMin: 24 * 60 }, // 假日 10:00～24:00
+                holidayWeekdays: [6, 0]                          // 週六、週日預設為假日
+            },
+
+            FOG_WARNING_THRESHOLD: 1.5,   // 觸發濃霧＋時間小幽靈的門檻（小時）
+
+            // 以下門檻皆為「雙週理論時間池」的比例（開局時快照固定）
+            FURNITURE_TIER_RATIOS: [0.015, 0.035, 0.06, 0.09, 0.12], // 單類家具 Lv1～Lv5 (前密後疏)
+            PET_STAGE_BASIC_RATIO: 0.05,   // 破蛋進入「基礎幼年體」
+            PET_STAGE_VARIANT_RATIO: 0.15, // 鎖定主屬性「變體（種族基底）」
+            PET_STAGE_SUPER_RATIO: 0.30,   // 進化為「超級變體（疊加氣質配件）」
+
+            PET_BALANCED_MIN_SHARE: 0.15,  // 全能光環：四類各佔「已認領總時數」>= 15%
+            CATEGORIES: ['learn', 'rest', 'hobby', 'social'] // 同時也是平手時的固定優先順序
+        };
+
+        const STORAGE_KEYS = {
+            USER_SETTINGS: 'user_settings',
+            CURRENT_CYCLE: 'current_cycle',
+            DAILY_LOGS: 'daily_logs',
+            ENCYCLOPEDIA: 'encyclopedia',
+            FURNITURE_COLLECTION: 'furniture_collection'
+        };
+
+        const CATEGORY_META = {
+            learn:  { name: '學習', icon: '📚', species: '貓頭鷹', accessory: '學士帽＋書本' },
+            rest:   { name: '休息', icon: '☕', species: '水豚',   accessory: '溫泉毛巾＋熱茶' },
+            hobby:  { name: '興趣', icon: '🎨', species: '狐狸',   accessory: '貝雷帽＋畫筆' },
+            social: { name: '社交', icon: '💬', species: '企鵝',   accessory: '派對帽＋氣球' }
+        };
+
+        const STAGE_NAMES = {
+            egg: '蛋',
+            basic: '基礎幼年體',
+            variant: '變體',
+            super_variant: '超級變體'
+        };
+
+        const UNIT_DURATIONS = [0.5, 1.0, 2.0];
+
+        /* ==========================================================================
+           2. 浮點數防呆與邏輯時間計算工具函式
+           ========================================================================== */
+        function round1(val) {
+            return Math.round(val * 10) / 10;
+        }
+
+        function clamp(val, min, max) {
+            return Math.min(max, Math.max(min, val));
+        }
+
+        // 模擬時間偏移量 (毫秒)，預設 0 代表完全使用真實系統時間
+        let simulatedTimeOffsetMs = 0;
+
+        function getNow() {
+            return new Date(Date.now() + simulatedTimeOffsetMs);
+        }
+
+        // 計算邏輯日期 YYYY-MM-DD (以凌晨 04:00 DAY_BOUNDARY_HOUR 為換日線)
+        function getLogicalDateString(dateObj) {
+            const shifted = new Date(dateObj.getTime() - MVP_CONFIG.DAY_BOUNDARY_HOUR * 3600000);
+            const y = shifted.getFullYear();
+            const m = String(shifted.getMonth() + 1).padStart(2, '0');
+            const d = String(shifted.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // 邏輯日期與錨點週一相差的天數 (以 UTC 計算，避免夏令時間誤差)
+        function daysFromAnchor(logicalDateStr) {
+            const [y, m, d] = logicalDateStr.split('-').map(Number);
+            const [ay, am, ad] = MVP_CONFIG.CYCLE_ANCHOR_MONDAY.split('-').map(Number);
+            return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ay, am - 1, ad)) / 86400000);
+        }
+
+        function getCycleIndex(logicalDateStr) {
+            return Math.floor(daysFromAnchor(logicalDateStr) / MVP_CONFIG.CYCLE_DAYS);
+        }
+
+        // 雙週識別碼 cycleId：錨點那輪為 C001，之後每 14 天 +1
+        function getCycleId(logicalDateStr) {
+            const no = getCycleIndex(logicalDateStr) + 1;
+            return `C${no < 0 ? '-' : ''}${String(Math.abs(no)).padStart(3, '0')}`;
+        }
+
+        // 該輪雙週第 1 天 (週一) 的邏輯日期 YYYY-MM-DD
+        function getCycleStartDate(logicalDateStr) {
+            const [ay, am, ad] = MVP_CONFIG.CYCLE_ANCHOR_MONDAY.split('-').map(Number);
+            const dt = new Date(Date.UTC(ay, am - 1, ad));
+            dt.setUTCDate(dt.getUTCDate() + getCycleIndex(logicalDateStr) * MVP_CONFIG.CYCLE_DAYS);
+            return dt.toISOString().slice(0, 10);
+        }
+
+        // 本輪第幾天 (1 ~ 14)
+        function getCycleDayNumber(logicalDateStr) {
+            const offset = daysFromAnchor(logicalDateStr) % MVP_CONFIG.CYCLE_DAYS;
+            return (offset + MVP_CONFIG.CYCLE_DAYS) % MVP_CONFIG.CYCLE_DAYS + 1;
+        }
+
+        // 取得昨日邏輯日期字串
+        function getYesterdayLogicalDate(todayLogicalStr) {
+            const [y, m, d] = todayLogicalStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d, 12, 0, 0);
+            dt.setDate(dt.getDate() - 1);
+            const yy = dt.getFullYear();
+            const ym = String(dt.getMonth() + 1).padStart(2, '0');
+            const yd = String(dt.getDate()).padStart(2, '0');
+            return `${yy}-${ym}-${yd}`;
+        }
+
+        // 邏輯日期當天某個分鐘數對應的時間點 (分鐘可 > 1440，代表跨過午夜)
+        function logicalDateAtMinutes(logicalDateStr, minutes) {
+            const [y, m, d] = logicalDateStr.split('-').map(Number);
+            return new Date(y, m - 1, d, 0, minutes, 0, 0);
+        }
+
+        // 分鐘數 → "HH:MM"，超過 24:00 標示為「隔日」
+        function formatMinutes(minutes) {
+            const nextDay = minutes > 24 * 60;
+            const mm = nextDay ? minutes - 24 * 60 : minutes;
+            const text = `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
+            return nextDay ? `隔日 ${text}` : text;
+        }
+
+        // 已流逝空閒時間 elapsedHours = clamp((now - 當日開始時間) / 3600000, 0, 當日時間池)
+        function computeElapsedHours(nowObj, logicalDateStr, schedule) {
+            const start = logicalDateAtMinutes(logicalDateStr, schedule.startMin);
+            const poolHours = (schedule.endMin - schedule.startMin) / 60;
+            return round1(clamp((nowObj.getTime() - start.getTime()) / 3600000, 0, poolHours));
+        }
+
+        /* ==========================================================================
+           3. Web Audio 復古掌機音效引擎
+           ========================================================================== */
+        const SoundFX = {
+            ctx: null,
+            enabled: true,
+            init() {
+                if (!this.ctx) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (AC) this.ctx = new AC();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            tone(freq, dur = 0.06, delay = 0) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    if (!this.ctx) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+                    gain.gain.setValueAtTime(0.07, this.ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + dur);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + dur);
+                } catch (e) {}
+            },
+            beep() { this.tone(960, 0.05, 0); },
+            feed() {
+                this.tone(523, 0.06, 0);
+                this.tone(659, 0.06, 0.07);
+                this.tone(784, 0.06, 0.14);
+                this.tone(1046, 0.12, 0.21);
+            },
+            evolve() {
+                this.tone(587, 0.07, 0);
+                this.tone(784, 0.07, 0.08);
+                this.tone(987, 0.07, 0.16);
+                this.tone(1174, 0.18, 0.24);
+            },
+            cancel() {
+                this.tone(620, 0.06, 0);
+                this.tone(420, 0.08, 0.07);
+            }
+        };
+
+        /* ==========================================================================
+           4. 本地資料層 (LocalStorage 讀寫與三組 Schema 管理)
+           ========================================================================== */
+        let userSettings = null;   // 使用者作息設定 (null 代表尚未完成首次設定)
+        let currentCycle = null;
+        let dailyLogs = {};
+        let encyclopedia = [];
+        let furnitureCollection = []; // 跨輪家具收藏 (曾擺出過的家具 id)
+
+        // 畫面 UI 狀態
+        let uiState = {
+            unitIndex: 0,               // 0: 0.5h, 1: 1.0h, 2: 2.0h
+            activeDateKey: '',          // 當前正在檢視/投餵的邏輯日期 (預設今日，可切昨日補登)
+            todayKey: '',               // 邏輯今日 YYYY-MM-DD
+            yesterdayKey: '',           // 邏輯昨日 YYYY-MM-DD
+            canBackfillYesterday: false,// 是否符合昨日補登資格
+            animFrame: 0,               // 雙幀動畫心跳 (0 或 1)
+            lastUpgradedSlot: null,     // 剛解鎖或升級的家具槽位
+            shellTheme: 'cream'
+        };
+
+        function loadStorageData() {
+            try {
+                const rawSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
+                const rawCycle = localStorage.getItem(STORAGE_KEYS.CURRENT_CYCLE);
+                const rawLogs = localStorage.getItem(STORAGE_KEYS.DAILY_LOGS);
+                const rawEncy = localStorage.getItem(STORAGE_KEYS.ENCYCLOPEDIA);
+                const rawCollection = localStorage.getItem(STORAGE_KEYS.FURNITURE_COLLECTION);
+
+                userSettings = rawSettings ? JSON.parse(rawSettings) : null;
+                currentCycle = rawCycle ? JSON.parse(rawCycle) : null;
+                dailyLogs = rawLogs ? JSON.parse(rawLogs) : {};
+                encyclopedia = rawEncy ? JSON.parse(rawEncy) : [];
+                furnitureCollection = rawCollection ? JSON.parse(rawCollection) : [];
+
+                // 舊版資料 (單週 weekId / 尚無作息快照) 不相容：捨棄週期與圖鑑，保留每日紀錄
+                if (currentCycle && (!currentCycle.cycleId || !currentCycle.scheduleSnapshot)) currentCycle = null;
+                encyclopedia = encyclopedia.filter(e => e && e.cycleId && e.cyclePoolHours);
+                // 家具系統上線前的週期：補上空的家具狀態，下次時數變動時自動同步
+                if (currentCycle && !currentCycle.furniture) {
+                    currentCycle.furniture = createEmptyFurnitureState();
+                    currentCycle.pendingChoices = [];
+                }
+            } catch (e) {
+                console.error('LocalStorage 讀取失敗:', e);
+                userSettings = null;
+                currentCycle = null;
+                dailyLogs = {};
+                encyclopedia = [];
+                furnitureCollection = [];
+            }
+        }
+
+        function saveStorageData() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(userSettings));
+                localStorage.setItem(STORAGE_KEYS.CURRENT_CYCLE, JSON.stringify(currentCycle));
+                localStorage.setItem(STORAGE_KEYS.DAILY_LOGS, JSON.stringify(dailyLogs));
+                localStorage.setItem(STORAGE_KEYS.ENCYCLOPEDIA, JSON.stringify(encyclopedia));
+                localStorage.setItem(STORAGE_KEYS.FURNITURE_COLLECTION, JSON.stringify(furnitureCollection));
+            } catch (e) {
+                console.error('LocalStorage 寫入失敗:', e);
+            }
+        }
+
+        // 依作息與星期幾判斷預設日子類型
+        function getDefaultDayType(logicalDateStr, schedule) {
+            const [y, m, d] = logicalDateStr.split('-').map(Number);
+            const weekday = new Date(y, m - 1, d, 12).getDay();
+            return schedule.holidayWeekdays.includes(weekday) ? 'holiday' : 'workday';
+        }
+
+        function getPoolHours(range) {
+            return round1((range.endMin - range.startMin) / 60);
+        }
+
+        // 雙週理論時間池：本輪 14 天依「預設日子類型」加總 (手動休假不計入)
+        function computeCyclePoolHours(cycleStartDate, schedule) {
+            let total = 0;
+            for (let i = 0; i < MVP_CONFIG.CYCLE_DAYS; i++) {
+                const [y, m, d] = cycleStartDate.split('-').map(Number);
+                const dt = new Date(Date.UTC(y, m - 1, d + i));
+                const key = dt.toISOString().slice(0, 10);
+                total += getPoolHours(schedule[getDefaultDayType(key, schedule)]);
+            }
+            return round1(total);
+        }
+
+        function createFreshCycle(logicalDateStr) {
+            const cycleStartDate = getCycleStartDate(logicalDateStr);
+            // 開局快照作息：本輪中途修改設定只影響下一輪
+            const scheduleSnapshot = JSON.parse(JSON.stringify(userSettings));
+            return {
+                cycleId: getCycleId(logicalDateStr),
+                cycleStartDate: cycleStartDate,
+                scheduleSnapshot: scheduleSnapshot,
+                cyclePoolHours: computeCyclePoolHours(cycleStartDate, scheduleSnapshot),
+                totalHoursByCategory: {
+                    learn: 0,
+                    rest: 0,
+                    hobby: 0,
+                    social: 0
+                },
+                lastUpdatedCategory: null,
+                lockedVariantSpecies: null,
+                hoursAtVariantLock: null,
+                furniture: createEmptyFurnitureState(), // 各類 Lv3 風格與 Lv4/5 選擇
+                pendingChoices: [],                     // 等待三選一的升級
+                isSettled: false
+            };
+        }
+
+        function ensureDailyLog(logicalDateStr) {
+            if (!dailyLogs[logicalDateStr]) {
+                dailyLogs[logicalDateStr] = {
+                    date: logicalDateStr,
+                    dayType: null,          // null = 依星期幾預設；'workday' / 'holiday' = 手動切換
+                    allocatedHours: 0,
+                    records: []
+                };
+            }
+            return dailyLogs[logicalDateStr];
+        }
+
+        // 當日實際日子類型 (手動切換優先，否則依本輪作息快照預設)
+        function getDayType(logicalDateStr) {
+            const log = dailyLogs[logicalDateStr];
+            return (log && log.dayType) || getDefaultDayType(logicalDateStr, currentCycle.scheduleSnapshot);
+        }
+
+        function getDaySchedule(logicalDateStr) {
+            return currentCycle.scheduleSnapshot[getDayType(logicalDateStr)];
+        }
+
+        // 當日時間池上限 (取代固定 6.0h)
+        function getDailyCap(logicalDateStr) {
+            return getPoolHours(getDaySchedule(logicalDateStr));
+        }
+
+        // 當前視角的已流逝時間：昨日補登視角固定視為已流逝滿整個時間池
+        function getViewElapsedHours(logicalDateStr, nowObj) {
+            if (logicalDateStr === uiState.yesterdayKey) return getDailyCap(logicalDateStr);
+            return computeElapsedHours(nowObj, logicalDateStr, getDaySchedule(logicalDateStr));
+        }
+
+        // 本輪各門檻 (理論時間池 × 比例)
+        function getCycleThresholds(cycle) {
+            const pool = cycle.cyclePoolHours;
+            return {
+                basic: round1(pool * MVP_CONFIG.PET_STAGE_BASIC_RATIO),
+                variant: round1(pool * MVP_CONFIG.PET_STAGE_VARIANT_RATIO),
+                super: round1(pool * MVP_CONFIG.PET_STAGE_SUPER_RATIO),
+                furniture: MVP_CONFIG.FURNITURE_TIER_RATIOS.map(ratio => round1(pool * ratio))
+            };
+        }
+
+        // 單類家具階級 0 (空地) ～ 5
+        function getFurnitureLevel(hours, thresholds) {
+            return thresholds.furniture.filter(h => (hours || 0) >= h).length;
+        }
+
+        function getFurnitureLevels(cycle) {
+            const t = getCycleThresholds(cycle);
+            const levels = {};
+            MVP_CONFIG.CATEGORIES.forEach(cat => {
+                levels[cat] = getFurnitureLevel(cycle.totalHoursByCategory[cat], t);
+            });
+            return levels;
+        }
+
+        /* ==========================================================================
+           5. 寵物四階段「基因鎖定」進化與雙週結算 (規格 4.5)
+           ========================================================================== */
+        function getCycleTotalHours(cycle) {
+            const w = cycle.totalHoursByCategory;
+            return round1((w.learn || 0) + (w.rest || 0) + (w.hobby || 0) + (w.social || 0));
+        }
+
+        function getPetStage(cycle) {
+            const total = getCycleTotalHours(cycle);
+            const t = getCycleThresholds(cycle);
+            if (total < t.basic) return 'egg';
+            if (total < t.variant) return 'basic';
+            if (total < t.super) return 'variant';
+            return 'super_variant';
+        }
+
+        // 取最高類別；平手時 lastUpdatedCategory 在平手名單中則勝出，否則依 CATEGORIES 固定順序取第一個
+        function pickTopCategory(hoursMap, lastUpdatedCategory) {
+            const maxVal = Math.max(...MVP_CONFIG.CATEGORIES.map(cat => round1(hoursMap[cat] || 0)));
+            const tied = MVP_CONFIG.CATEGORIES.filter(cat => round1(hoursMap[cat] || 0) === maxVal);
+            return tied.includes(lastUpdatedCategory) ? lastUpdatedCategory : tied[0];
+        }
+
+        // 每次時數變動後呼叫：首次達變體門檻鎖定種族並保存快照；撤銷跌破門檻則解除鎖定
+        function syncVariantLock(cycle) {
+            const total = getCycleTotalHours(cycle);
+            const variantHours = getCycleThresholds(cycle).variant;
+            if (total >= variantHours && !cycle.lockedVariantSpecies) {
+                cycle.lockedVariantSpecies = pickTopCategory(cycle.totalHoursByCategory, cycle.lastUpdatedCategory);
+                cycle.hoursAtVariantLock = { ...cycle.totalHoursByCategory };
+            } else if (total < variantHours && cycle.lockedVariantSpecies) {
+                cycle.lockedVariantSpecies = null;
+                cycle.hoursAtVariantLock = null;
+            }
+        }
+
+        // 超級變體氣質配件：全能平衡 (四類各佔已認領 >= 15%) 優先，否則取鎖定後增量 Δh 最高的類別
+        function getSuperAccessory(cycle) {
+            if (getPetStage(cycle) !== 'super_variant' || !cycle.hoursAtVariantLock) return null;
+            const w = cycle.totalHoursByCategory;
+            const total = getCycleTotalHours(cycle);
+            if (MVP_CONFIG.CATEGORIES.every(cat => (w[cat] || 0) / total >= MVP_CONFIG.PET_BALANCED_MIN_SHARE)) {
+                return 'balanced';
+            }
+            const delta = {};
+            MVP_CONFIG.CATEGORIES.forEach(cat => {
+                delta[cat] = round1((w[cat] || 0) - (cycle.hoursAtVariantLock[cat] || 0));
+            });
+            return pickTopCategory(delta, cycle.lastUpdatedCategory);
+        }
+
+        // 即時寵物外觀：{ stage, species, accessory }
+        function getPetView(cycle) {
+            const stage = getPetStage(cycle);
+            const species = (stage === 'variant' || stage === 'super_variant') ? cycle.lockedVariantSpecies : stage;
+            return { stage, species, accessory: getSuperAccessory(cycle) };
+        }
+
+        function getPetViewKey(view) {
+            return `${view.stage}|${view.species}|${view.accessory}`;
+        }
+
+        // 寵物完整名稱，例如「企鵝 · 知性眼鏡＋書本」
+        function getPetDisplayName(view) {
+            if (view.stage === 'egg') return '神秘電子蛋';
+            if (view.stage === 'basic') return '通用幼年體';
+            const speciesName = CATEGORY_META[view.species].species;
+            if (!view.accessory) return `${speciesName}（變體）`;
+            if (view.accessory === 'balanced') return `${speciesName} · 全能光環`;
+            if (view.accessory === view.species) return `${speciesName} · 專精皇冠`;
+            return `${speciesName} · ${CATEGORY_META[view.accessory].accessory}`;
+        }
+
+        /* ==========================================================================
+           6. 主畫面啟動檢查流程 (App Boot Sequence - 規格第 5 節)
+           ========================================================================== */
+        function runAppBootSequence() {
+            const now = getNow();
+            // 1. 計算邏輯今日 todayKey (以 now - 4小時 取得 YYYY-MM-DD)
+            const todayKey = getLogicalDateString(now);
+            const yesterdayKey = getYesterdayLogicalDate(todayKey);
+            const currentCycleId = getCycleId(todayKey);
+
+            // 0. 尚未完成首次作息設定：先顯示設定畫面，確認後再繼續
+            if (!userSettings) {
+                openSettingsPanel(true);
+                return;
+            }
+
+            // 邏輯日期已換日：舊的「今日」變成昨日，視角一律回到新的今日
+            if (uiState.todayKey && uiState.todayKey !== todayKey) {
+                uiState.activeDateKey = todayKey;
+            }
+            uiState.todayKey = todayKey;
+            uiState.yesterdayKey = yesterdayKey;
+
+            // 初始化或檢查 current_cycle
+            if (!currentCycle) {
+                currentCycle = createFreshCycle(todayKey);
+            }
+
+            // 2. 檢查雙週週期重置：若已跨入新雙週且未結算，執行圖鑑寫入、跳出結算彈窗並初始化新週期
+            if (currentCycle.cycleId !== currentCycleId) {
+                if (!currentCycle.isSettled) {
+                    const view = getPetView(currentCycle);
+                    const entry = {
+                        cycleId: currentCycle.cycleId,
+                        settledAt: now.getTime(),
+                        finalStage: view.stage,
+                        species: view.species,
+                        accessory: view.accessory,
+                        totalCycleHours: getCycleTotalHours(currentCycle),
+                        cyclePoolHours: currentCycle.cyclePoolHours,
+                        categoryBreakdown: { ...currentCycle.totalHoursByCategory },
+                        furnitureLevels: getFurnitureLevels(currentCycle),
+                        furniture: JSON.parse(JSON.stringify(currentCycle.furniture)),
+                        combos: getUnlockedCombos(currentCycle).map(c => c.id)
+                    };
+                    encyclopedia.unshift(entry);
+                    currentCycle.isSettled = true;
+                    showSettlementModal(entry);
+                }
+                // 初始化新一輪雙週新蛋（若隔多輪未開，僅結算最後遊玩的那一輪，不產生 0h 空紀錄）
+                currentCycle = createFreshCycle(todayKey);
+            }
+
+            // 3. 讀取 / 初始化今日紀錄
+            ensureDailyLog(todayKey);
+
+            // 若目前視角不在昨日補登，或昨日已不符合補登資格，鎖定視角在今日
+            if (uiState.activeDateKey !== yesterdayKey) {
+                uiState.activeDateKey = todayKey;
+            }
+
+            // 4. 檢查昨日補登資格：同雙週昨日存在且未滿昨日時間池
+            uiState.canBackfillYesterday = checkYesterdayBackfill();
+
+            if (!uiState.canBackfillYesterday && uiState.activeDateKey === yesterdayKey) {
+                uiState.activeDateKey = todayKey;
+            }
+
+            saveStorageData();
+            // 5. 渲染畫面
+            renderAll();
+            // 上次離開前尚未完成的三選一
+            if (currentCycle.pendingChoices.length) openChoicePanel();
+        }
+
+        function checkYesterdayBackfill() {
+            const yLog = dailyLogs[uiState.yesterdayKey];
+            return Boolean(
+                yLog &&
+                getCycleId(uiState.yesterdayKey) === currentCycle.cycleId &&
+                yLog.allocatedHours < getDailyCap(uiState.yesterdayKey)
+            );
+        }
+
+        /* ==========================================================================
+           7. 核心投餵、截斷與雙模式演算法 (規格 4.1, 4.2, 4.3)
+           ========================================================================== */
+        function feedCategory(category) {
+            const targetDate = uiState.activeDateKey;
+            const log = ensureDailyLog(targetDate);
+            const now = getNow();
+
+            // 計算當前視角的已流逝時間：若為昨日補登視角，elapsedHours 固定視為已流逝滿整個時間池
+            const isYesterdayMode = (targetDate === uiState.yesterdayKey);
+            const elapsedHours = getViewElapsedHours(targetDate, now);
+            const dailyCap = getDailyCap(targetDate);
+
+            // 4.1 時間池上限與防呆截斷
+            const remainingQuota = round1(Math.max(0, dailyCap - log.allocatedHours));
+            if (remainingQuota <= 0) return;
+
+            const clickedHours = UNIT_DURATIONS[uiState.unitIndex];
+            const actualHours = round1(Math.min(clickedHours, remainingQuota));
+            if (actualHours <= 0) return;
+
+            // 4.2 寫入 mode 判定：allocatedHours < elapsedHours 為 'retroactive'，否則為 'planned'
+            const mode = log.allocatedHours < elapsedHours ? 'retroactive' : 'planned';
+
+            // 記錄升級前的家具階級與寵物型態，用於觸發升級動畫與音效
+            const prevCatHours = currentCycle.totalHoursByCategory[category] || 0;
+            const prevPetView = getPetView(currentCycle);
+
+            // 更新當日紀錄
+            log.allocatedHours = round1(log.allocatedHours + actualHours);
+            log.records.push({
+                id: `${now.getTime()}_${Math.random().toString(36).slice(2, 6)}`,
+                category: category,
+                hours: actualHours,
+                mode: mode,
+                timestamp: now.getTime()
+            });
+
+            // 同步累加進本輪雙週 current_cycle，並檢查 12h 種族鎖定
+            currentCycle.totalHoursByCategory[category] = round1(prevCatHours + actualHours);
+            currentCycle.lastUpdatedCategory = category;
+            syncVariantLock(currentCycle);
+
+            // 檢查家具是否升階 (Lv0～Lv5)
+            const newCatHours = currentCycle.totalHoursByCategory[category];
+            const thresholds = getCycleThresholds(currentCycle);
+            const newFurnitureLevel = getFurnitureLevel(newCatHours, thresholds);
+            const furnitureMessages = syncFurnitureState(currentCycle);
+            let upgradedFurniture = false;
+            if (newFurnitureLevel > getFurnitureLevel(prevCatHours, thresholds)) {
+                uiState.lastUpgradedSlot = category;
+                upgradedFurniture = true;
+                setTimeout(() => { uiState.lastUpgradedSlot = null; }, 500);
+            }
+
+            const newPetView = getPetView(currentCycle);
+            const evolved = getPetViewKey(prevPetView) !== getPetViewKey(newPetView);
+
+            saveStorageData();
+
+            // 播放音效與投餵飛入動畫
+            if (evolved || upgradedFurniture) {
+                SoundFX.evolve();
+            } else {
+                SoundFX.feed();
+            }
+            triggerFeedingOrbAnim();
+            triggerPetUseFurniture(category);
+
+            // 更新寵物回饋氣泡
+            const catName = CATEGORY_META[category].name;
+            const modeLabel = mode === 'retroactive' ? '清除了迷霧' : '預支微規劃';
+            let speech = `${catName} +${actualHours}h (${modeLabel})！`;
+            if (evolved) {
+                speech = newPetView.stage === prevPetView.stage
+                    ? `✨ 配件換成「${getPetDisplayName(newPetView)}」！`
+                    : `✨ 進化成「${getPetDisplayName(newPetView)}」了！`;
+            } else if (furnitureMessages.length) {
+                speech = `🏠 ${furnitureMessages.join(' ')}`;
+            } else if (upgradedFurniture && newFurnitureLevel <= 2) {
+                speech = `🏠 ${catName}角落 Lv${newFurnitureLevel}：新增${FURNITURE_CATALOG[category].generic[newFurnitureLevel - 1].name}！`;
+            }
+            document.getElementById('petSpeechBubble').textContent = speech;
+
+            // 若在昨日補登視角下把昨日時間池補滿，自動切回今日視角並更新徽章
+            if (isYesterdayMode && log.allocatedHours >= dailyCap) {
+                uiState.canBackfillYesterday = false;
+                uiState.activeDateKey = uiState.todayKey;
+                document.getElementById('petSpeechBubble').textContent = `昨日 ${dailyCap.toFixed(1)}h 補登完成！已切回今日視角～`;
+            }
+
+            renderAll();
+            // Lv4 / Lv5 升級：跳出三選一 (投餵動畫後)
+            if (currentCycle.pendingChoices.length) setTimeout(openChoicePanel, 600);
+        }
+
+        function undoLastRecord() {
+            const log = ensureDailyLog(uiState.activeDateKey);
+            if (!log.records.length) return;
+            SoundFX.cancel();
+
+            const lastRec = log.records.pop();
+            log.allocatedHours = round1(Math.max(0, log.allocatedHours - lastRec.hours));
+            currentCycle.totalHoursByCategory[lastRec.category] = round1(
+                Math.max(0, (currentCycle.totalHoursByCategory[lastRec.category] || 0) - lastRec.hours)
+            );
+            // 撤銷跌破變體門檻時解除種族鎖定，重新達標時依當下數據再鎖一次
+            syncVariantLock(currentCycle);
+            // 撤銷跌破家具階級時移除該階的風格 / 選擇
+            syncFurnitureState(currentCycle);
+
+            // 重新檢查昨日補登資格
+            uiState.canBackfillYesterday = checkYesterdayBackfill();
+
+            saveStorageData();
+            document.getElementById('petSpeechBubble').textContent = `已撤銷 ${CATEGORY_META[lastRec.category].name} ${lastRec.hours}h`;
+            renderAll();
+        }
+
+        /* ==========================================================================
+           8. 20 項像素美術素材 SVG 繪製引擎 (雙幀動畫寵物 / 特效 / 4槽位8款家具)
+           ========================================================================== */
+        /* ---------- 家具系統：Lv1～2 通用 / Lv3 習慣風格 / Lv4～5 三選一 / 跨類組合 (規格 5.5) ---------- */
+        // 像素圖以 [x, y, w, h, 色] 陣列描述，D=最深 L=亮 M=中間色
+        const PIXEL_COLORS = { D: '#0f380f', L: '#9bbc0f', M: '#306230' };
+        function pixelArt(rects) {
+            return rects.map(([x, y, w, h, c]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${PIXEL_COLORS[c]}"/>`).join('');
+        }
+
+        // 每類 5 個固定區塊 (Lv1～Lv5)，座標為槽位 viewBox 內的位置
+        // 後排 (rest / social) viewBox 47×26；前排 (learn / hobby) viewBox 57×12，皆放大 2 倍
+        const FURNITURE_SLOTS = {
+            rest:   { row: 'back',  regions: [[0, 18], [12, 15], [33, 10], [1, 2], [17, 1]] },
+            social: { row: 'back',  regions: [[36, 18], [14, 15], [0, 10], [32, 2], [16, 1]] },
+            learn:  { row: 'front', regions: [[0, 0], [11, 0], [19, 0], [38, 0], [47, 0]] },
+            hobby:  { row: 'front', regions: [[48, 0], [38, 0], [19, 0], [10, 0], [0, 0]] }
+        };
+
+        const FURNITURE_STYLES = { deep: '深度派', fragment: '碎片派', planner: '計畫派' };
+
+        // 家具目錄：generic (Lv1～2 固定)、style (Lv3)、pool (Lv4～5 三選一)
+        const FURNITURE_CATALOG = {
+            rest: {
+                generic: [
+                    { name: '懶人抱枕', art: [[0, 2, 11, 6, 'D'], [1, 3, 9, 3, 'L']] },
+                    { name: '暖被窩', art: [[0, 2, 19, 9, 'D'], [1, 3, 17, 3, 'L'], [1, 0, 5, 2, 'D']] }
+                ],
+                style: {
+                    deep: { name: '舒眠大床', art: [[0, 3, 2, 13, 'D'], [2, 7, 12, 9, 'D'], [3, 8, 10, 3, 'L'], [3, 5, 4, 2, 'D']] },
+                    fragment: { name: '午睡懶骨頭', art: [[2, 8, 10, 8, 'D'], [1, 10, 12, 6, 'D'], [3, 9, 8, 4, 'L'], [5, 7, 4, 1, 'D'], [10, 2, 3, 1, 'M'], [11, 3, 1, 1, 'M'], [10, 4, 3, 1, 'M']] },
+                    planner: { name: '香氛角落', art: [[1, 10, 12, 1, 'D'], [2, 11, 1, 5, 'D'], [11, 11, 1, 5, 'D'], [4, 6, 4, 4, 'D'], [5, 7, 2, 2, 'L'], [5, 3, 1, 2, 'M'], [7, 1, 1, 3, 'M'], [9, 7, 3, 3, 'D'], [10, 8, 1, 1, 'L']] }
+                },
+                pool: [
+                    { key: 'clock', name: '壁掛時鐘', art: [[3, 2, 8, 8, 'D'], [4, 3, 6, 6, 'L'], [7, 4, 1, 3, 'D'], [7, 6, 2, 1, 'D']] },
+                    { key: 'lights', name: '星星串燈', art: [[0, 1, 14, 1, 'M'], [1, 2, 2, 2, 'D'], [5, 2, 2, 2, 'D'], [9, 2, 2, 2, 'D'], [12, 2, 2, 2, 'D']] },
+                    { key: 'aquarium', name: '魚缸', art: [[0, 12, 14, 1, 'D'], [1, 4, 12, 8, 'D'], [2, 5, 10, 6, 'L'], [4, 7, 3, 2, 'D'], [9, 8, 2, 1, 'D'], [6, 5, 1, 1, 'M']] },
+                    { key: 'dreamcatcher', name: '捕夢網', art: [[4, 1, 6, 6, 'D'], [5, 2, 4, 4, 'L'], [7, 3, 1, 2, 'D'], [4, 7, 1, 4, 'D'], [7, 7, 1, 5, 'D'], [9, 7, 1, 4, 'D']] },
+                    { key: 'petbed', name: '寵物窩', art: [[0, 12, 14, 1, 'D'], [2, 8, 10, 4, 'D'], [3, 9, 8, 2, 'L'], [5, 6, 4, 3, 'D'], [5, 5, 1, 1, 'D'], [8, 5, 1, 1, 'D']] }
+                ]
+            },
+            social: {
+                generic: [
+                    { name: '咖啡杯小茶几', art: [[0, 3, 11, 2, 'D'], [5, 5, 1, 3, 'D'], [3, 7, 5, 1, 'D'], [3, 0, 3, 3, 'D']] },
+                    { name: '雙人沙發', art: [[1, 0, 19, 11, 'D'], [2, 1, 17, 4, 'L'], [2, 6, 17, 1, 'L'], [0, 4, 2, 7, 'D'], [19, 4, 2, 7, 'D']] }
+                ],
+                style: {
+                    deep: { name: '長餐桌', art: [[0, 7, 14, 2, 'D'], [1, 9, 2, 7, 'D'], [11, 9, 2, 7, 'D'], [2, 5, 3, 2, 'D'], [9, 5, 3, 2, 'D'], [3, 5, 1, 1, 'L'], [10, 5, 1, 1, 'L'], [6, 3, 1, 4, 'D'], [6, 2, 1, 1, 'M']] },
+                    fragment: { name: '留言板', art: [[0, 0, 14, 10, 'D'], [1, 1, 12, 8, 'M'], [2, 2, 3, 2, 'L'], [6, 2, 2, 3, 'L'], [9, 3, 3, 2, 'L'], [3, 5, 4, 2, 'L'], [8, 6, 3, 2, 'L'], [6, 10, 2, 6, 'D'], [3, 15, 8, 1, 'D']] },
+                    planner: { name: '派對月曆', art: [[1, 1, 12, 11, 'D'], [2, 3, 10, 8, 'L'], [3, 0, 1, 2, 'D'], [10, 0, 1, 2, 'D'], [2, 6, 10, 1, 'D'], [5, 3, 1, 8, 'D'], [8, 3, 1, 8, 'D'], [9, 7, 2, 2, 'M'], [6, 12, 2, 4, 'D']] }
+                },
+                pool: [
+                    { key: 'photos', name: '牆上合照', art: [[0, 2, 6, 6, 'D'], [1, 3, 4, 4, 'L'], [8, 3, 5, 5, 'D'], [9, 4, 3, 3, 'L']] },
+                    { key: 'bunting', name: '派對彩旗', art: [[0, 0, 14, 1, 'M'], [1, 1, 4, 1, 'D'], [2, 2, 2, 1, 'D'], [5, 1, 4, 1, 'D'], [6, 2, 2, 1, 'D'], [9, 1, 4, 1, 'D'], [10, 2, 2, 1, 'D']] },
+                    { key: 'boardgames', name: '桌遊櫃', art: [[1, 3, 12, 10, 'D'], [2, 4, 10, 4, 'L'], [2, 9, 10, 3, 'L'], [3, 5, 3, 3, 'D'], [7, 6, 4, 2, 'M'], [3, 10, 4, 2, 'M'], [8, 10, 3, 2, 'D']] },
+                    { key: 'coffee', name: '咖啡機', art: [[0, 12, 14, 1, 'D'], [3, 3, 8, 9, 'D'], [4, 4, 6, 3, 'L'], [6, 7, 2, 1, 'L'], [6, 10, 2, 2, 'L'], [6, 1, 1, 2, 'M']] },
+                    { key: 'disco', name: '迪斯可球', art: [[7, 0, 1, 3, 'D'], [4, 3, 7, 7, 'D'], [5, 4, 2, 2, 'L'], [8, 6, 2, 2, 'L'], [5, 7, 1, 1, 'L'], [1, 5, 1, 1, 'M'], [12, 8, 1, 1, 'M']] }
+                ]
+            },
+            learn: {
+                generic: [
+                    { name: '小書堆', art: [[0, 9, 10, 3, 'D'], [1, 10, 8, 1, 'L'], [1, 6, 8, 3, 'D'], [2, 7, 6, 1, 'L'], [2, 4, 6, 2, 'D']] },
+                    { name: '小檯燈', art: [[0, 2, 6, 3, 'D'], [1, 3, 4, 1, 'L'], [3, 5, 1, 6, 'D'], [1, 11, 5, 1, 'D']] }
+                ],
+                style: {
+                    deep: { name: '大書櫃', art: [[0, 0, 18, 12, 'D'], [1, 1, 16, 4, 'L'], [1, 6, 16, 5, 'L'], [2, 1, 2, 4, 'D'], [5, 2, 1, 3, 'D'], [7, 1, 2, 4, 'D'], [11, 2, 3, 3, 'D'], [15, 1, 1, 4, 'D'], [2, 7, 3, 4, 'D'], [6, 6, 1, 5, 'D'], [9, 7, 2, 4, 'D'], [13, 6, 3, 5, 'D']] },
+                    fragment: { name: '便利貼牆', art: [[0, 0, 18, 9, 'D'], [1, 1, 16, 7, 'M'], [2, 2, 3, 2, 'L'], [6, 1, 3, 3, 'L'], [10, 3, 3, 2, 'L'], [14, 2, 2, 3, 'L'], [3, 5, 3, 2, 'L'], [8, 5, 4, 2, 'L'], [2, 9, 1, 3, 'D'], [15, 9, 1, 3, 'D']] },
+                    planner: { name: '白板行事曆', art: [[0, 0, 18, 9, 'D'], [1, 1, 16, 7, 'L'], [1, 3, 16, 1, 'D'], [1, 5, 16, 1, 'D'], [5, 1, 1, 7, 'D'], [9, 1, 1, 7, 'D'], [13, 1, 1, 7, 'D'], [10, 4, 2, 1, 'M'], [2, 9, 1, 3, 'D'], [15, 9, 1, 3, 'D']] }
+                },
+                pool: [
+                    { key: 'globe', name: '地球儀', art: [[1, 2, 5, 6, 'D'], [2, 3, 3, 4, 'L'], [3, 4, 1, 2, 'D'], [3, 8, 1, 3, 'D'], [1, 11, 5, 1, 'D']] },
+                    { key: 'blackboard', name: '小黑板', art: [[0, 0, 9, 8, 'D'], [1, 1, 7, 6, 'M'], [2, 3, 4, 1, 'L'], [2, 5, 5, 1, 'L'], [1, 8, 1, 4, 'D'], [7, 8, 1, 4, 'D']] },
+                    { key: 'telescope', name: '望遠鏡', art: [[1, 1, 7, 3, 'D'], [2, 2, 4, 1, 'L'], [4, 4, 1, 7, 'D'], [2, 8, 1, 4, 'D'], [6, 8, 1, 4, 'D']] },
+                    { key: 'typewriter', name: '打字機', art: [[1, 0, 7, 5, 'D'], [2, 1, 5, 4, 'L'], [0, 5, 9, 7, 'D'], [1, 6, 7, 2, 'L'], [1, 9, 1, 1, 'L'], [3, 9, 1, 1, 'L'], [5, 9, 1, 1, 'L'], [7, 9, 1, 1, 'L']] },
+                    { key: 'trophy', name: '獎盃架', art: [[0, 11, 9, 1, 'D'], [2, 2, 5, 4, 'D'], [3, 3, 3, 2, 'L'], [0, 3, 2, 2, 'D'], [7, 3, 2, 2, 'D'], [4, 6, 1, 3, 'D'], [2, 9, 5, 2, 'D']] }
+                ]
+            },
+            hobby: {
+                generic: [
+                    { name: '小盆栽', art: [[2, 1, 4, 2, 'D'], [0, 3, 8, 2, 'D'], [3, 5, 2, 2, 'D'], [1, 7, 6, 5, 'D'], [2, 8, 4, 1, 'L']] },
+                    { name: '顏料盒', art: [[0, 8, 9, 4, 'D'], [1, 9, 1, 1, 'L'], [3, 9, 1, 1, 'L'], [5, 9, 1, 1, 'L'], [7, 9, 1, 1, 'L'], [2, 5, 1, 3, 'D']] }
+                ],
+                style: {
+                    deep: { name: '大型手作桌', art: [[0, 4, 18, 2, 'D'], [1, 6, 2, 6, 'D'], [15, 6, 2, 6, 'D'], [2, 1, 5, 3, 'D'], [3, 2, 3, 1, 'L'], [10, 0, 6, 4, 'D'], [11, 1, 4, 2, 'L']] },
+                    fragment: { name: '小玩具架', art: [[0, 0, 18, 1, 'D'], [0, 5, 18, 1, 'D'], [0, 11, 18, 1, 'D'], [0, 0, 1, 12, 'D'], [17, 0, 1, 12, 'D'], [2, 2, 2, 3, 'D'], [5, 3, 3, 2, 'M'], [10, 1, 2, 4, 'D'], [13, 2, 3, 3, 'M'], [2, 7, 3, 4, 'M'], [7, 8, 2, 3, 'D'], [11, 7, 4, 4, 'D'], [12, 8, 2, 2, 'L']] },
+                    planner: { name: '作品進度板', art: [[1, 0, 16, 9, 'D'], [2, 1, 14, 7, 'L'], [3, 2, 10, 1, 'D'], [3, 4, 7, 1, 'D'], [3, 6, 4, 1, 'D'], [3, 9, 1, 3, 'D'], [14, 9, 1, 3, 'D']] }
+                },
+                pool: [
+                    { key: 'easel', name: '畫架', art: [[1, 0, 7, 7, 'D'], [2, 1, 5, 5, 'L'], [3, 2, 2, 2, 'D'], [5, 4, 1, 1, 'M'], [2, 7, 1, 5, 'D'], [6, 7, 1, 5, 'D'], [3, 7, 3, 1, 'D']] },
+                    { key: 'puzzle', name: '拼圖箱', art: [[0, 5, 9, 7, 'D'], [1, 6, 7, 5, 'L'], [2, 7, 2, 2, 'D'], [5, 7, 2, 1, 'M'], [4, 9, 3, 1, 'D']] },
+                    { key: 'vinyl', name: '黑膠唱機', art: [[0, 7, 9, 5, 'D'], [1, 4, 6, 3, 'D'], [3, 5, 2, 1, 'L'], [7, 3, 1, 4, 'D']] },
+                    { key: 'models', name: '模型展示櫃', art: [[0, 0, 9, 12, 'D'], [1, 1, 7, 4, 'L'], [1, 6, 7, 5, 'L'], [2, 2, 2, 3, 'D'], [5, 3, 2, 2, 'M'], [3, 7, 3, 4, 'D']] },
+                    { key: 'sewing', name: '縫紉機', art: [[0, 9, 9, 3, 'D'], [1, 3, 7, 2, 'D'], [6, 5, 2, 4, 'D'], [1, 5, 2, 4, 'D'], [3, 1, 2, 2, 'M']] }
+                ]
+            }
+        };
+
+        // 跨類組合家具 (兩類皆達 Lv3)，順序即中央展示架的格位
+        const FURNITURE_COMBOS = [
+            { cats: ['learn', 'social'], name: '讀書會長桌', art: [[0, 5, 10, 2, 'D'], [1, 7, 1, 3, 'D'], [8, 7, 1, 3, 'D'], [2, 3, 2, 2, 'D'], [6, 3, 2, 2, 'D']] },
+            { cats: ['rest', 'hobby'], name: '窗邊吊床', art: [[0, 1, 1, 6, 'D'], [9, 1, 1, 6, 'D'], [1, 5, 8, 2, 'D'], [2, 5, 6, 1, 'L'], [6, 2, 2, 3, 'M']] },
+            { cats: ['learn', 'hobby'], name: '手作工作台', art: [[0, 5, 10, 2, 'D'], [1, 7, 1, 3, 'D'], [8, 7, 1, 3, 'D'], [1, 2, 3, 3, 'D'], [2, 3, 1, 1, 'L'], [6, 1, 2, 4, 'M']] },
+            { cats: ['rest', 'social'], name: '火鍋暖桌', art: [[1, 6, 8, 2, 'D'], [2, 8, 1, 2, 'D'], [7, 8, 1, 2, 'D'], [3, 3, 4, 3, 'D'], [4, 4, 2, 1, 'L'], [4, 1, 1, 2, 'M'], [6, 0, 1, 2, 'M']] },
+            { cats: ['learn', 'rest'], name: '午睡閱讀椅', art: [[1, 2, 2, 7, 'D'], [1, 6, 8, 2, 'D'], [7, 4, 2, 4, 'D'], [2, 8, 1, 2, 'D'], [7, 8, 1, 2, 'D'], [3, 3, 4, 3, 'D'], [4, 4, 2, 1, 'L']] },
+            { cats: ['hobby', 'social'], name: '卡拉OK舞台', art: [[0, 8, 10, 2, 'D'], [4, 1, 2, 3, 'D'], [5, 4, 1, 4, 'D'], [1, 2, 1, 2, 'M'], [8, 3, 1, 2, 'M'], [0, 1, 2, 1, 'M']] }
+        ].map(c => ({ ...c, id: `combo_${c.cats.join('_')}` }));
+
+        const FURNITURE_COLLECTIBLE_TOTAL = MVP_CONFIG.CATEGORIES.length * (3 + 5) + FURNITURE_COMBOS.length; // 38
+
+        function getStyleItemId(cat, style) { return `${cat}_style_${style}`; }
+        function getPoolItemId(cat, key) { return `${cat}_${key}`; }
+
+        function findPoolItem(cat, itemId) {
+            return FURNITURE_CATALOG[cat].pool.find(p => getPoolItemId(cat, p.key) === itemId);
+        }
+
+        // 依 id 取得家具名稱 (圖鑑與訊息用)
+        function getFurnitureItemName(itemId) {
+            const combo = FURNITURE_COMBOS.find(c => c.id === itemId);
+            if (combo) return combo.name;
+            const [cat, kind, style] = itemId.split('_');
+            if (kind === 'style') return FURNITURE_CATALOG[cat].style[style].name;
+            return findPoolItem(cat, itemId).name;
+        }
+
+        function createEmptyFurnitureState() {
+            const state = {};
+            MVP_CONFIG.CATEGORIES.forEach(cat => { state[cat] = { style: null, lv4: null, lv5: null }; });
+            return state;
+        }
+
+        // 本輪某類別的紀錄 (用於 Lv3 風格判定)
+        function getCycleRecords(cycle, category) {
+            return Object.values(dailyLogs)
+                .filter(log => getCycleId(log.date) === cycle.cycleId)
+                .flatMap(log => log.records)
+                .filter(rec => rec.category === category);
+        }
+
+        // Lv3 風格判定：計畫派 (planned ≥ 40%) → 深度派 (單筆 ≥ 1.0h 佔 ≥ 50%) → 碎片派
+        function determineFurnitureStyle(cycle, category) {
+            const records = getCycleRecords(cycle, category);
+            const total = records.reduce((sum, r) => sum + r.hours, 0);
+            if (total <= 0) return 'fragment';
+            const planned = records.filter(r => r.mode === 'planned').reduce((sum, r) => sum + r.hours, 0);
+            if (planned / total >= 0.4) return 'planner';
+            const deep = records.filter(r => r.hours >= 1.0).reduce((sum, r) => sum + r.hours, 0);
+            if (deep / total >= 0.5) return 'deep';
+            return 'fragment';
+        }
+
+        function getUnlockedCombos(cycle) {
+            const levels = getFurnitureLevels(cycle);
+            return FURNITURE_COMBOS.filter(c => c.cats.every(cat => levels[cat] >= 3));
+        }
+
+        function addToFurnitureCollection(itemId) {
+            if (furnitureCollection.includes(itemId)) return false;
+            furnitureCollection.push(itemId);
+            return true;
+        }
+
+        // 時數變動後同步家具狀態：Lv3 鎖定/解除風格、移除跌破階級的選擇、為新達成的 Lv4/5 排入三選一、收藏組合
+        // 回傳本次新擺出的家具訊息 (供寵物氣泡顯示)
+        function syncFurnitureState(cycle) {
+            const levels = getFurnitureLevels(cycle);
+            const messages = [];
+            MVP_CONFIG.CATEGORIES.forEach(cat => {
+                const f = cycle.furniture[cat];
+                const lv = levels[cat];
+                if (lv >= 3 && !f.style) {
+                    f.style = determineFurnitureStyle(cycle, cat);
+                    addToFurnitureCollection(getStyleItemId(cat, f.style));
+                    messages.push(`${CATEGORY_META[cat].name}角落 Lv3：${FURNITURE_STYLES[f.style]}・${FURNITURE_CATALOG[cat].style[f.style].name}！`);
+                } else if (lv < 3 && f.style) {
+                    f.style = null;
+                }
+                [4, 5].forEach(level => {
+                    const field = `lv${level}`;
+                    const isPending = cycle.pendingChoices.some(p => p.category === cat && p.level === level);
+                    if (lv < level) {
+                        f[field] = null;
+                        cycle.pendingChoices = cycle.pendingChoices.filter(p => !(p.category === cat && p.level === level));
+                    } else if (!f[field] && !isPending) {
+                        cycle.pendingChoices.push({ category: cat, level: level, candidates: null });
+                    }
+                });
+            });
+            getUnlockedCombos(cycle).forEach(combo => {
+                if (addToFurnitureCollection(combo.id)) messages.push(`解鎖組合家具「${combo.name}」！`);
+            });
+            return messages;
+        }
+
+        // 三選一候選：優先 2 件未收藏 + 1 件已收藏，不足時從家具池補齊
+        function drawFurnitureCandidates(cycle, category) {
+            const f = cycle.furniture[category];
+            const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(p => p[1]);
+            const pool = FURNITURE_CATALOG[category].pool
+                .map(p => getPoolItemId(category, p.key))
+                .filter(id => id !== f.lv4 && id !== f.lv5);
+            const uncollected = shuffle(pool.filter(id => !furnitureCollection.includes(id)));
+            const collected = shuffle(pool.filter(id => furnitureCollection.includes(id)));
+            const picks = [...uncollected.slice(0, 2), ...collected.slice(0, 1)];
+            shuffle(pool).forEach(id => { if (picks.length < 3 && !picks.includes(id)) picks.push(id); });
+            return picks;
+        }
+
+        // 取得某類別 Lv1～Lv5 實際擺出的家具 (null 代表尚未決定)
+        function getPlacedFurniture(cycle, category, level) {
+            const catalog = FURNITURE_CATALOG[category];
+            const f = cycle.furniture[category];
+            const items = [catalog.generic[0], catalog.generic[1]];
+            items.push(f.style ? catalog.style[f.style] : null);
+            items.push(f.lv4 ? findPoolItem(category, f.lv4) : null);
+            items.push(f.lv5 ? findPoolItem(category, f.lv5) : null);
+            return items.slice(0, level);
+        }
+
+        function renderAllFurnitureSVG(cycle, thresholds) {
+            return MVP_CONFIG.CATEGORIES.map(cat => {
+                const level = getFurnitureLevel(cycle.totalHoursByCategory[cat], thresholds);
+                if (level === 0) return '';
+                const slot = FURNITURE_SLOTS[cat];
+                const [w, h] = slot.row === 'back' ? [47, 26] : [57, 12];
+                const placed = getPlacedFurniture(cycle, cat, level);
+                const items = placed.map((item, i) => {
+                    if (!item) return '';
+                    const [x, y] = slot.regions[i];
+                    const isNew = uiState.lastUpgradedSlot === cat && i === level - 1;
+                    return `<g transform="translate(${x} ${y})"><g${isNew ? ' class="anim-pop"' : ''}>${pixelArt(item.art)}</g></g>`;
+                }).join('');
+                const names = placed.map(item => item ? item.name : '（待選擇）').join('、');
+                return `
+                <div class="slot-${cat}" title="${CATEGORY_META[cat].name}家具 Lv${level}：${names} (${cycle.totalHoursByCategory[cat]}h)">
+                    <svg width="${w * 2}" height="${h * 2}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${items}</svg>
+                </div>`;
+            }).join('');
+        }
+
+        // 中央牆面展示架：6 格組合家具 (未解鎖顯示空格)
+        function renderComboShelfSVG(cycle) {
+            const unlocked = getUnlockedCombos(cycle).map(c => c.id);
+            if (!unlocked.length) return '';
+            const cells = FURNITURE_COMBOS.map((combo, i) => {
+                const x = i * 11;
+                const art = unlocked.includes(combo.id)
+                    ? pixelArt(combo.art)
+                    : `<rect x="4" y="7" width="2" height="2" fill="#306230" opacity="0.35"/>`;
+                return `<g transform="translate(${x} 0)"><title>${unlocked.includes(combo.id) ? combo.name : '未解鎖組合'}</title>${art}</g>`;
+            }).join('');
+            return `<svg width="${65 * 2}" height="${11 * 2}" viewBox="0 0 65 11" shape-rendering="crispEdges">
+                ${cells}<rect x="0" y="10" width="65" height="1" fill="#0f380f"/></svg>`;
+        }
+
+        // 單件家具預覽 (三選一卡片用)
+        function renderFurniturePreviewSVG(category, itemId, scale = 5) {
+            const item = findPoolItem(category, itemId);
+            const [w, h] = FURNITURE_SLOTS[category].row === 'back' ? [14, 13] : [9, 12];
+            return `<svg width="${w * scale}" height="${h * scale}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${pixelArt(item.art)}</svg>`;
+        }
+
+        // 寵物紙娃娃渲染：蛋 / 基礎幼年體 / 4 種族底圖，超級變體再疊加氣質配件圖層 (皆為雙幀)
+        // view = { stage, species, accessory }
+        const SPECIES_BASE_SVG = {
+            // 貓頭鷹 (learn)：耳羽 + 大圓眼
+            learn: `
+                <rect x="4" y="3" width="2" height="2" fill="#0f380f"/>
+                <rect x="12" y="3" width="2" height="2" fill="#0f380f"/>
+                <path d="M5 4h8v1h1v1h1v8h-1v1h-1v1h-8v-1h-1v-1h-1v-8h1v-1h1z" fill="#0f380f"/>
+                <path d="M5 5h8v1h1v8h-1v1h-8v-1h-1v-8h1z" fill="#9bbc0f"/>
+                <rect x="5" y="7" width="3" height="3" fill="#0f380f"/>
+                <rect x="6" y="8" width="1" height="1" fill="#9bbc0f"/>
+                <rect x="10" y="7" width="3" height="3" fill="#0f380f"/>
+                <rect x="11" y="8" width="1" height="1" fill="#9bbc0f"/>
+                <rect x="8" y="10" width="2" height="1" fill="#0f380f"/>
+                <rect x="7" y="12" width="1" height="1" fill="#0f380f"/>
+                <rect x="10" y="12" width="1" height="1" fill="#0f380f"/>`,
+            // 水豚 (rest)：方正身形 + 瞇瞇眼 + 大鼻子
+            rest: `
+                <rect x="4" y="4" width="2" height="1" fill="#0f380f"/>
+                <rect x="12" y="4" width="2" height="1" fill="#0f380f"/>
+                <path d="M3 5h12v1h1v8h-1v1h-12v-1h-1v-8h1z" fill="#0f380f"/>
+                <path d="M3 6h12v8h-12z" fill="#9bbc0f"/>
+                <rect x="5" y="8" width="2" height="1" fill="#0f380f"/>
+                <rect x="11" y="8" width="2" height="1" fill="#0f380f"/>
+                <rect x="7" y="10" width="4" height="2" fill="#0f380f"/>
+                <rect x="8" y="10" width="2" height="1" fill="#306230"/>`,
+            // 狐狸 (hobby)：尖耳 + 倒三角臉 + 大尾巴
+            hobby: `
+                <path d="M3 2h2v1h1v2h-3z" fill="#0f380f"/>
+                <path d="M13 2h2v3h-3v-2h1z" fill="#0f380f"/>
+                <path d="M3 5h12v6h-1v1h-1v1h-2v1h-4v-1h-2v-1h-1v-1h-1z" fill="#0f380f"/>
+                <path d="M4 6h10v4h-1v1h-1v1h-6v-1h-1v-1h-1z" fill="#9bbc0f"/>
+                <rect x="6" y="7" width="1" height="2" fill="#0f380f"/>
+                <rect x="11" y="7" width="1" height="2" fill="#0f380f"/>
+                <rect x="8" y="10" width="2" height="1" fill="#0f380f"/>
+                <path d="M14 12h3v-3h1v5h-1v1h-3z" fill="#0f380f"/>`,
+            // 企鵝 (social)：深色身體 + 白肚 + 鰭
+            social: `
+                <path d="M6 2h6v1h1v1h1v9h-1v2h-8v-2h-1v-9h1v-1h1z" fill="#0f380f"/>
+                <path d="M7 6h4v1h1v5h-1v2h-4v-2h-1v-5h1z" fill="#9bbc0f"/>
+                <rect x="7" y="4" width="1" height="1" fill="#9bbc0f"/>
+                <rect x="10" y="4" width="1" height="1" fill="#9bbc0f"/>
+                <rect x="8" y="6" width="2" height="1" fill="#0f380f"/>
+                <rect x="3" y="7" width="1" height="4" fill="#0f380f"/>
+                <rect x="14" y="7" width="1" height="4" fill="#0f380f"/>`
+        };
+
+        // 頭部配件 (y 0~3) 與手持配件 (左側 x 0~2)
+        const ACCESSORY_HEAD_SVG = {
+            learn: `<rect x="4" y="2" width="10" height="1" fill="#0f380f"/><rect x="7" y="3" width="4" height="1" fill="#0f380f"/><rect x="13" y="3" width="1" height="2" fill="#0f380f"/>`,
+            rest: `<rect x="6" y="2" width="6" height="2" fill="#0f380f"/><rect x="7" y="2" width="4" height="1" fill="#9bbc0f"/>`,
+            hobby: `<rect x="5" y="2" width="8" height="2" fill="#0f380f"/><rect x="8" y="1" width="2" height="1" fill="#0f380f"/>`,
+            social: `<path d="M8 0h2v1h1v2h1v1h-6v-1h1v-2h1z" fill="#0f380f"/><rect x="8" y="2" width="1" height="1" fill="#9bbc0f"/>`,
+            crown: `<path d="M5 1h1v1h1v-1h1v1h2v-1h1v1h1v-1h1v3h-8z" fill="#0f380f"/><rect x="8" y="3" width="2" height="1" fill="#9bbc0f"/>`,
+            balanced: `<rect x="5" y="0" width="8" height="1" fill="#0f380f"/><rect x="4" y="1" width="1" height="1" fill="#0f380f"/><rect x="13" y="1" width="1" height="1" fill="#0f380f"/>`
+        };
+        const ACCESSORY_HAND_SVG = {
+            learn: `<rect x="0" y="10" width="2" height="4" fill="#0f380f"/><rect x="0" y="11" width="1" height="2" fill="#9bbc0f"/>`,
+            rest: `<rect x="0" y="11" width="2" height="3" fill="#0f380f"/><rect x="0" y="12" width="1" height="1" fill="#9bbc0f"/><rect x="1" y="9" width="1" height="1" fill="#0f380f"/>`,
+            hobby: `<rect x="1" y="8" width="1" height="6" fill="#0f380f"/><rect x="0" y="7" width="2" height="2" fill="#0f380f"/>`,
+            social: `<rect x="0" y="4" width="2" height="3" fill="#0f380f"/><rect x="0" y="5" width="1" height="1" fill="#9bbc0f"/><rect x="1" y="7" width="1" height="6" fill="#0f380f"/>`,
+            balanced: `<rect x="1" y="7" width="1" height="3" fill="#0f380f"/><rect x="0" y="8" width="3" height="1" fill="#0f380f"/>`
+        };
+
+        function renderAccessoryLayer(species, accessory) {
+            if (!accessory) return '';
+            if (accessory === 'balanced') return ACCESSORY_HEAD_SVG.balanced + ACCESSORY_HAND_SVG.balanced;
+            // 與種族同屬性 → 專精皇冠；跨屬性 → 該屬性的混搭配件
+            const head = accessory === species ? ACCESSORY_HEAD_SVG.crown : ACCESSORY_HEAD_SVG[accessory];
+            return head + ACCESSORY_HAND_SVG[accessory];
+        }
+
+        function renderPetSVG(view, frame, size = 66) {
+            const dy = frame === 1 ? -1 : 0; // 雙幀原地呼吸起伏
+
+            if (view.stage === 'egg') {
+                const tilt = frame === 1 ? 'transform="rotate(3 9 10)"' : 'transform="rotate(-3 9 10)"';
+                return `
+                <svg width="${size}" height="${size}" viewBox="0 0 18 18" shape-rendering="crispEdges">
+                    <g ${tilt}>
+                        <path d="M7 2h4v2h2v3h1v6h-1v2h-2v1h-4v-1h-2v-2h-1v-6h1v-3h2z" fill="#0f380f"/>
+                        <path d="M7 3h4v2h2v8h-2v2h-4v-2h-2v-8h2z" fill="#9bbc0f"/>
+                        <!-- 蛋殼斑紋 -->
+                        <rect x="6" y="7" width="2" height="2" fill="#0f380f"/>
+                        <rect x="10" y="9" width="2" height="2" fill="#0f380f"/>
+                        <rect x="7" y="12" width="3" height="1" fill="#0f380f"/>
+                    </g>
+                </svg>`;
+            }
+
+            if (view.stage === 'basic') {
+                return `
+                <svg width="${size}" height="${size}" viewBox="0 0 18 18" shape-rendering="crispEdges">
+                    <g transform="translate(0, ${dy})">
+                        <rect x="8" y="3" width="2" height="2" fill="#0f380f"/>
+                        <path d="M6 5h6v1h2v6h-2v2h-6v-2h-2v-6h2z" fill="#0f380f"/>
+                        <path d="M6 6h6v1h1v4h-1v2h-6v-2h-1v-4h1z" fill="#9bbc0f"/>
+                        <rect x="6" y="8" width="1" height="2" fill="#0f380f"/>
+                        <rect x="11" y="8" width="1" height="2" fill="#0f380f"/>
+                        <rect x="8" y="10" width="2" height="1" fill="#0f380f"/>
+                    </g>
+                    <rect x="6" y="15" width="2" height="1" fill="#0f380f"/>
+                    <rect x="10" y="15" width="2" height="1" fill="#0f380f"/>
+                </svg>`;
+            }
+
+            // 變體 / 超級變體：種族底圖 + 配件圖層
+            return `
+            <svg width="${size}" height="${size}" viewBox="0 0 18 18" shape-rendering="crispEdges">
+                <g transform="translate(0, ${dy})">
+                    ${SPECIES_BASE_SVG[view.species] || SPECIES_BASE_SVG.learn}
+                    ${renderAccessoryLayer(view.species, view.accessory)}
+                </g>
+                <rect x="5" y="16" width="3" height="1" fill="#0f380f"/>
+                <rect x="10" y="16" width="3" height="1" fill="#0f380f"/>
+            </svg>`;
+        }
+
+        // 雙幀動畫特效：時間小幽靈 (濃霧 >= 1.5h) & 微規劃小星星 (allocated > elapsed)
+        function renderEffectsSVG(fogHours, isPlannedMode, frame) {
+            let html = '';
+            if (fogHours >= MVP_CONFIG.FOG_WARNING_THRESHOLD) {
+                const tail = frame === 1
+                    ? '<path d="M2 12h2v2h2v-2h2v2h2v-2h2v2h2v-4h-12z" fill="#0f380f"/>'
+                    : '<path d="M2 12h1v2h3v-2h2v2h3v-2h1v2h2v-4h-12z" fill="#0f380f"/>';
+                html += `
+                <div class="floating-ghost" title="未認領濃霧已達 ${fogHours}h！">
+                    <svg width="28" height="28" viewBox="0 0 16 16" shape-rendering="crispEdges">
+                        <path d="M5 2h6v2h2v6h-10v-6h2z" fill="#0f380f"/>
+                        <path d="M5 3h6v2h1v5h-8v-5h1z" fill="#9bbc0f"/>
+                        <rect x="5" y="6" width="2" height="2" fill="#0f380f"/>
+                        <rect x="9" y="6" width="2" height="2" fill="#0f380f"/>
+                        ${tail}
+                    </svg>
+                </div>`;
+            } else if (isPlannedMode) {
+                const starSvg = frame === 1
+                    ? `<svg width="20" height="20" viewBox="0 0 11 11" shape-rendering="crispEdges">
+                        <rect x="5" y="1" width="1" height="9" fill="#0f380f"/>
+                        <rect x="1" y="5" width="9" height="1" fill="#0f380f"/>
+                        <rect x="3" y="3" width="5" height="5" fill="#0f380f"/>
+                        <rect x="4" y="4" width="3" height="3" fill="#9bbc0f"/>
+                       </svg>`
+                    : `<svg width="20" height="20" viewBox="0 0 11 11" shape-rendering="crispEdges">
+                        <rect x="5" y="2" width="1" height="7" fill="#0f380f"/>
+                        <rect x="2" y="5" width="7" height="1" fill="#0f380f"/>
+                        <rect x="4" y="4" width="3" height="3" fill="#0f380f"/>
+                       </svg>`;
+                html += `<div class="floating-star-left">${starSvg}</div><div class="floating-star-right">${starSvg}</div>`;
+            }
+            return html;
+        }
+
+        function triggerFeedingOrbAnim() {
+            const container = document.getElementById('feedingOrbContainer');
+            container.innerHTML = `
+                <div class="feeding-orb">
+                    <svg width="26" height="26" viewBox="0 0 16 16" shape-rendering="crispEdges">
+                        <path d="M6 2h4v2h2v3h2v5h-12v-5h2v-3h2z" fill="#0f380f"/>
+                        <path d="M6 3h4v2h2v3h1v3h-10v-3h1v-3h2z" fill="#9bbc0f"/>
+                        <rect x="6" y="8" width="4" height="3" fill="#0f380f"/>
+                    </svg>
+                </div>`;
+            setTimeout(() => { container.innerHTML = ''; }, 720);
+        }
+
+        // 寵物使用家具 (簡化版)：滑到該類別角落、頭上冒出動作圖示，約 2 秒後回到中央
+        const PET_USE_MOVES = {
+            rest:   { x: -105, y: -6, icon: 'Zzz' },
+            social: { x: 105,  y: -6, icon: '♥' },
+            learn:  { x: -105, y: 22, icon: '📖' },
+            hobby:  { x: 105,  y: 22, icon: '♪' }
+        };
+        let petUseTimer = null;
+
+        function triggerPetUseFurniture(category) {
+            const move = PET_USE_MOVES[category];
+            const mover = document.getElementById('petMover');
+            const icon = document.getElementById('petActionIcon');
+            clearTimeout(petUseTimer);
+            mover.style.transform = `translate(${move.x}px, ${move.y}px)`;
+            icon.textContent = move.icon;
+            icon.classList.remove('hidden');
+            petUseTimer = setTimeout(() => {
+                mover.style.transform = '';
+                icon.classList.add('hidden');
+            }, 2200);
+        }
+
+        /* ---------- Lv4 / Lv5 三選一面板 (必須選一件才能繼續) ---------- */
+        function openChoicePanel() {
+            const pending = currentCycle.pendingChoices[0];
+            const panel = document.getElementById('choicePanel');
+            if (!pending) {
+                panel.classList.add('hidden');
+                return;
+            }
+            if (!pending.candidates) {
+                pending.candidates = drawFurnitureCandidates(currentCycle, pending.category);
+                saveStorageData();
+            }
+            const meta = CATEGORY_META[pending.category];
+            document.getElementById('choiceTitle').textContent = `${meta.icon} ${meta.name}角落 Lv${pending.level}：選一件家具`;
+            document.getElementById('choiceCards').innerHTML = pending.candidates.map(id => `
+                <button class="choice-card" onclick="chooseFurniture('${id}')">
+                    <div class="choice-preview">${renderFurniturePreviewSVG(pending.category, id)}</div>
+                    <div class="choice-name">${getFurnitureItemName(id)}</div>
+                    <div class="choice-tag">${furnitureCollection.includes(id) ? '已收藏' : '★ 新'}</div>
+                </button>
+            `).join('');
+            document.getElementById('choiceRemaining').textContent = currentCycle.pendingChoices.length > 1
+                ? `還有 ${currentCycle.pendingChoices.length - 1} 次選擇` : '';
+            panel.classList.remove('hidden');
+        }
+
+        function chooseFurniture(itemId) {
+            const pending = currentCycle.pendingChoices.shift();
+            if (!pending) return;
+            currentCycle.furniture[pending.category][`lv${pending.level}`] = itemId;
+            const isNew = addToFurnitureCollection(itemId);
+            SoundFX.evolve();
+            uiState.lastUpgradedSlot = pending.category;
+            setTimeout(() => { uiState.lastUpgradedSlot = null; }, 500);
+            saveStorageData();
+            renderAll();
+            document.getElementById('petSpeechBubble').textContent =
+                `🏠 ${CATEGORY_META[pending.category].name}角落 Lv${pending.level}：擺上${getFurnitureItemName(itemId)}${isNew ? '（新收藏！）' : ''}`;
+            openChoicePanel();
+        }
+
+        /* ==========================================================================
+           9. 畫面渲染總控 (renderAll)
+           ========================================================================== */
+        function renderAll() {
+            const now = getNow();
+            const isYesterdayMode = (uiState.activeDateKey === uiState.yesterdayKey);
+            const targetLog = ensureDailyLog(uiState.activeDateKey);
+            const allocated = targetLog.allocatedHours;
+            const elapsed = getViewElapsedHours(uiState.activeDateKey, now);
+            const dailyCap = getDailyCap(uiState.activeDateKey);
+            const daySchedule = getDaySchedule(uiState.activeDateKey);
+            const thresholds = getCycleThresholds(currentCycle);
+
+            // 1. 頂部掌機邊框資訊與時鐘
+            document.getElementById('bezelCycleDisplay').textContent =
+                `CYCLE: ${currentCycle.cycleId} · D${getCycleDayNumber(uiState.todayKey)}/${MVP_CONFIG.CYCLE_DAYS}`;
+            document.getElementById('bezelTimeDisplay').textContent =
+                `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            document.getElementById('simThresholdNote').textContent =
+                `池 ${currentCycle.cyclePoolHours}h → 破蛋 ${thresholds.basic}h / 鎖定 ${thresholds.variant}h / 超級 ${thresholds.super}h；家具 Lv1～5 ${thresholds.furniture.join(' / ')}h`;
+
+            // 模擬器時鐘狀態徽章
+            document.getElementById('simClockBadge').textContent = simulatedTimeOffsetMs === 0
+                ? `目前基準: 真實時間 (${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')})`
+                : `模擬時間: ${uiState.todayKey} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            // 2. LCD 頂部狀態列
+            document.getElementById('logicalDateDisplay').textContent = isYesterdayMode
+                ? `◀ 昨日 ${uiState.yesterdayKey.slice(5)}`
+                : uiState.todayKey;
+
+            const yBtn = document.getElementById('yesterdayBtn');
+            if (uiState.canBackfillYesterday) {
+                yBtn.classList.remove('hidden');
+                yBtn.textContent = isYesterdayMode ? '回今日' : '補登昨日';
+            } else {
+                yBtn.classList.add('hidden');
+            }
+
+            // 今日休假 / 今天上班切換鈕 (僅今日視角可切換)
+            const dayTypeBtn = document.getElementById('dayTypeBtn');
+            const isHoliday = getDayType(uiState.activeDateKey) === 'holiday';
+            dayTypeBtn.textContent = isHoliday ? '假日' : '平日';
+            dayTypeBtn.disabled = isYesterdayMode;
+            dayTypeBtn.title = `${isHoliday ? '假日' : '平日'} ${formatMinutes(daySchedule.startMin)}～${formatMinutes(daySchedule.endMin)}` +
+                (isYesterdayMode ? '' : `，點擊切換為${isHoliday ? '「今天上班」' : '「今日休假」'}`);
+
+            const petView = getPetView(currentCycle);
+            const cycleTotal = getCycleTotalHours(currentCycle);
+            const stageShort = (petView.stage === 'egg' || petView.stage === 'basic')
+                ? STAGE_NAMES[petView.stage]
+                : CATEGORY_META[petView.species].species + (petView.stage === 'super_variant' ? '★' : '');
+            document.getElementById('petStageBadge').textContent = `${stageShort} ${cycleTotal.toFixed(1)}h`;
+
+            document.getElementById('dailyQuotaText').textContent = `${allocated.toFixed(1)}/${dailyCap.toFixed(1)}h`;
+
+            // 3. 12格時間能量條 (每格 = 當日時間池 ÷ 12)
+            const cellHours = dailyCap / 12;
+            const allocCells = Math.round(allocated / cellHours);
+            const elapsedCells = Math.round(elapsed / cellHours);
+            document.getElementById('timeMeterBar').title = `每格代表 ${round1(cellHours)}h (上限 ${dailyCap.toFixed(1)}h)`;
+            let meterHTML = '';
+            for (let i = 0; i < 12; i++) {
+                if (i < allocCells && i < elapsedCells) {
+                    meterHTML += `<div class="meter-cell-filled" title="已認領時間"></div>`;
+                } else if (i < allocCells && i >= elapsedCells) {
+                    meterHTML += `<div class="meter-cell-planned" title="預支微規劃"></div>`;
+                } else if (i >= allocCells && i < elapsedCells) {
+                    meterHTML += `<div class="meter-cell-fog" title="待認領迷霧"></div>`;
+                } else {
+                    meterHTML += `<div class="meter-cell-empty" title="剩餘時間額度"></div>`;
+                }
+            }
+            document.getElementById('timeMeterBar').innerHTML = meterHTML;
+
+            // 4. 迷霧消長與三種模式判定 (規格 4.2)
+            const fogHours = round1(Math.max(0, elapsed - allocated));
+            const plannedHours = round1(Math.max(0, allocated - elapsed));
+            const modePill = document.getElementById('modeStatusPill');
+            const fogOverlay = document.getElementById('fogOverlay');
+
+            if (allocated < elapsed) {
+                const isHeavyFog = fogHours >= MVP_CONFIG.FOG_WARNING_THRESHOLD;
+                modePill.textContent = isHeavyFog
+                    ? `👻 濃霧待認領 ${fogHours.toFixed(1)}h (補登模式)`
+                    : `🌫️ 待認領迷霧 ${fogHours.toFixed(1)}h (補登模式)`;
+                fogOverlay.style.opacity = clamp(fogHours / 3.5, 0.25, 0.85);
+            } else if (allocated === elapsed) {
+                modePill.textContent = `☀️ 同步晴朗狀態 (已流逝 ${elapsed.toFixed(1)}h)`;
+                fogOverlay.style.opacity = 0;
+            } else {
+                modePill.textContent = `✨ 預支微規劃 +${plannedHours.toFixed(1)}h`;
+                fogOverlay.style.opacity = 0;
+            }
+
+            // 5. 時長單位按鈕 & 雙幀特效層 & 4槽位家具 & 寵物角色
+            document.getElementById('unitToggleBtn').textContent = `+${UNIT_DURATIONS[uiState.unitIndex].toFixed(1)}h`;
+            document.getElementById('effectLayer').innerHTML = renderEffectsSVG(fogHours, allocated > elapsed, uiState.animFrame);
+            document.getElementById('furnitureLayer').innerHTML = renderAllFurnitureSVG(currentCycle, thresholds);
+            document.getElementById('comboShelf').innerHTML = renderComboShelfSVG(currentCycle);
+            document.getElementById('petSpriteBox').innerHTML = renderPetSVG(petView, uiState.animFrame, 66);
+
+            // 6. 底部 4 顆活動投餵快捷鍵狀態與上限鎖定 (remaining === 0 時 disabled)
+            const isCapped = allocated >= dailyCap;
+            MVP_CONFIG.CATEGORIES.forEach(cat => {
+                const btn = document.getElementById(`btn-cat-${cat}`);
+                const sub = document.getElementById(`sub-${cat}`);
+                btn.disabled = isCapped;
+                sub.textContent = `${(currentCycle.totalHoursByCategory[cat] || 0).toFixed(1)}h`;
+            });
+
+            // 7. 同步刷新開啟中的子面板
+            if (!document.getElementById('recordsPanel').classList.contains('hidden')) {
+                renderRecordsPanel();
+            }
+            if (!document.getElementById('encyclopediaPanel').classList.contains('hidden')) {
+                renderEncyclopediaPanel();
+            }
+        }
+
+        /* ==========================================================================
+           10. 子面板與實體按鈕互動
+           ========================================================================== */
+        function cycleUnitDuration() {
+            SoundFX.beep();
+            uiState.unitIndex = (uiState.unitIndex + 1) % UNIT_DURATIONS.length;
+            renderAll();
+        }
+
+        function toggleYesterdayView() {
+            if (!uiState.canBackfillYesterday) return;
+            SoundFX.beep();
+            uiState.activeDateKey = (uiState.activeDateKey === uiState.yesterdayKey)
+                ? uiState.todayKey
+                : uiState.yesterdayKey;
+            const hint = uiState.activeDateKey === uiState.yesterdayKey
+                ? `已切換至昨日補登視角 (上限 ${getDailyCap(uiState.yesterdayKey).toFixed(1)}h)！`
+                : '已返回今日視角！';
+            document.getElementById('petSpeechBubble').textContent = hint;
+            renderAll();
+        }
+
+        // 今日休假 ⇄ 今天上班：只改今日上限與迷霧起算，不影響雙週理論時間池與門檻
+        function toggleDayType() {
+            if (uiState.activeDateKey !== uiState.todayKey) return;
+            const log = ensureDailyLog(uiState.todayKey);
+            const target = getDayType(uiState.todayKey) === 'holiday' ? 'workday' : 'holiday';
+            const targetCap = getPoolHours(currentCycle.scheduleSnapshot[target]);
+
+            // 已認領時數超過目標上限時不可切換 (例如已認領 8h 不能切回平日 6h)
+            if (log.allocatedHours > targetCap) {
+                SoundFX.cancel();
+                document.getElementById('petSpeechBubble').textContent =
+                    `今日已認領 ${log.allocatedHours.toFixed(1)}h，超過${target === 'workday' ? '平日' : '假日'}上限 ${targetCap.toFixed(1)}h，無法切換`;
+                return;
+            }
+
+            SoundFX.beep();
+            log.dayType = target;
+            saveStorageData();
+            const r = currentCycle.scheduleSnapshot[target];
+            document.getElementById('petSpeechBubble').textContent = target === 'holiday'
+                ? `🏖️ 今日休假！${formatMinutes(r.startMin)} 起算，上限 ${targetCap.toFixed(1)}h`
+                : `💼 今天上班，${formatMinutes(r.startMin)} 起算，上限 ${targetCap.toFixed(1)}h`;
+            renderAll();
+        }
+
+        /* ---------- 作息設定 (首次進入必填，之後可修改，下一輪生效) ---------- */
+        const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+
+        function buildTimeOptions(fromMin, toMin, selectedMin) {
+            let html = '';
+            for (let m = fromMin; m <= toMin; m += 30) {
+                html += `<option value="${m}" ${m === selectedMin ? 'selected' : ''}>${formatMinutes(m)}</option>`;
+            }
+            return html;
+        }
+
+        function openSettingsPanel(isOnboarding) {
+            const s = userSettings || MVP_CONFIG.DEFAULT_SCHEDULE;
+            const minStart = MVP_CONFIG.DAY_BOUNDARY_HOUR * 60;           // 04:00
+            const maxEnd = (24 + MVP_CONFIG.DAY_BOUNDARY_HOUR) * 60;      // 隔日 04:00
+            ['workday', 'holiday'].forEach(type => {
+                document.getElementById(`set-${type}-start`).innerHTML = buildTimeOptions(minStart, maxEnd - 30, s[type].startMin);
+                document.getElementById(`set-${type}-end`).innerHTML = buildTimeOptions(minStart + 30, maxEnd, s[type].endMin);
+            });
+            document.getElementById('set-holiday-days').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(wd => `
+                <label class="day-chip"><input type="checkbox" value="${wd}" ${s.holidayWeekdays.includes(wd) ? 'checked' : ''} onchange="renderSettingsPreview()">${WEEKDAY_LABELS[wd]}</label>
+            `).join('');
+
+            document.getElementById('settingsIntro').classList.toggle('hidden', !isOnboarding);
+            document.getElementById('settingsCloseBtn').classList.toggle('hidden', isOnboarding);
+            document.getElementById('settingsNextCycleNote').classList.toggle('hidden', isOnboarding);
+            document.getElementById('settingsPanel').dataset.onboarding = isOnboarding ? '1' : '';
+            document.getElementById('settingsPanel').classList.remove('hidden');
+            renderSettingsPreview();
+        }
+
+        function readSettingsForm() {
+            const range = type => ({
+                startMin: Number(document.getElementById(`set-${type}-start`).value),
+                endMin: Number(document.getElementById(`set-${type}-end`).value)
+            });
+            return {
+                workday: range('workday'),
+                holiday: range('holiday'),
+                holidayWeekdays: [...document.querySelectorAll('#set-holiday-days input:checked')].map(el => Number(el.value))
+            };
+        }
+
+        // 檢查作息是否合法，並即時預覽雙週時間池與門檻
+        function renderSettingsPreview() {
+            const s = readSettingsForm();
+            const errors = [];
+            if (s.workday.endMin <= s.workday.startMin) errors.push('平日結束需晚於開始');
+            if (s.holiday.endMin <= s.holiday.startMin) errors.push('假日結束需晚於開始');
+
+            const preview = document.getElementById('settingsPreview');
+            const saveBtn = document.getElementById('settingsSaveBtn');
+            if (errors.length) {
+                preview.textContent = `⚠ ${errors.join('；')}`;
+                saveBtn.disabled = true;
+                return;
+            }
+            const startDate = getCycleStartDate(uiState.todayKey || getLogicalDateString(getNow()));
+            const pool = computeCyclePoolHours(startDate, s);
+            const r = ratio => round1(pool * ratio).toFixed(1);
+            preview.innerHTML = `雙週時間池 <strong>${pool.toFixed(1)}h</strong><br>
+                破蛋 ${r(MVP_CONFIG.PET_STAGE_BASIC_RATIO)}h・鎖定 ${r(MVP_CONFIG.PET_STAGE_VARIANT_RATIO)}h・超級 ${r(MVP_CONFIG.PET_STAGE_SUPER_RATIO)}h`;
+            saveBtn.disabled = false;
+        }
+
+        function saveSettings() {
+            const isOnboarding = document.getElementById('settingsPanel').dataset.onboarding === '1';
+            userSettings = readSettingsForm();
+            SoundFX.evolve();
+            document.getElementById('settingsPanel').classList.add('hidden');
+
+            if (isOnboarding) {
+                // 首次設定：立即建立本輪 (含作息快照) 並開始孵蛋
+                runAppBootSequence();
+                document.getElementById('petSpeechBubble').textContent = '作息設定完成，開始孵蛋囉！';
+            } else {
+                saveStorageData();
+                renderAll();
+                document.getElementById('petSpeechBubble').textContent = '新作息已儲存，將於下一輪生效！';
+            }
+        }
+
+        function closeSettingsPanel() {
+            SoundFX.beep();
+            document.getElementById('settingsPanel').classList.add('hidden');
+        }
+
+        function onPetClick() {
+            SoundFX.beep();
+            const view = getPetView(currentCycle);
+            const total = getCycleTotalHours(currentCycle);
+            const t = getCycleThresholds(currentCycle);
+            const nextGoal = [t.basic, t.variant, t.super].find(h => total < h);
+            const msgs = [
+                `目前型態：${getPetDisplayName(view)}`,
+                nextGoal
+                    ? `本輪已累積 ${total.toFixed(1)}h，再 ${round1(nextGoal - total).toFixed(1)}h 進化！`
+                    : `本輪已累積 ${total.toFixed(1)}h，已是超級變體！`,
+                `家具共 5 階，單類滿 ${t.furniture.join(' / ')}h 依序升級！`
+            ];
+            document.getElementById('petSpeechBubble').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+        }
+
+        function renderRecordsPanel() {
+            const log = ensureDailyLog(uiState.activeDateKey);
+            document.getElementById('recordsPanelTitle').textContent = `📋 ${uiState.activeDateKey} 明細 (${log.allocatedHours.toFixed(1)}/${getDailyCap(uiState.activeDateKey).toFixed(1)}h)`;
+            document.getElementById('cycleBreakdownMini').textContent = `本輪累計: ${getCycleTotalHours(currentCycle).toFixed(1)}h`;
+
+            const container = document.getElementById('recordsListContainer');
+            if (!log.records.length) {
+                container.innerHTML = `<div style="text-align:center; padding:24px 0; opacity:0.75;">該日尚未有任何時間紀錄</div>`;
+                return;
+            }
+
+            container.innerHTML = [...log.records].reverse().map(rec => {
+                const meta = CATEGORY_META[rec.category];
+                const dt = new Date(rec.timestamp);
+                const hhmm = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+                const modeTag = rec.mode === 'retroactive' ? '[清迷霧]' : '[微規劃]';
+                return `
+                    <div class="record-row">
+                        <span>${meta.icon} <strong>${meta.name}</strong> +${rec.hours.toFixed(1)}h</span>
+                        <span>${modeTag} ${hhmm}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderEncyclopediaPanel() {
+            document.getElementById('encyCount').textContent = encyclopedia.length;
+            const container = document.getElementById('encyclopediaListContainer');
+            // 跨輪家具收藏摘要
+            const collectionHTML = `
+                <div class="ency-card" style="display:block;">
+                    <div style="font-weight:bold;">🪑 家具收藏 ${furnitureCollection.length} / ${FURNITURE_COLLECTIBLE_TOTAL}</div>
+                    <div style="font-size:9px; opacity:0.85;">${furnitureCollection.length
+                        ? furnitureCollection.map(getFurnitureItemName).join('、')
+                        : 'Lv3 風格、Lv4～5 選中的家具與組合家具會收錄在這裡'}</div>
+                </div>`;
+            if (!encyclopedia.length) {
+                container.innerHTML = collectionHTML + `<div style="text-align:center; padding:16px 8px; opacity:0.75;">尚無歷史週期收錄紀錄<br/>(每 14 天跨入新雙週時自動結算寫入)</div>`;
+                return;
+            }
+
+            container.innerHTML = collectionHTML + encyclopedia.map(item => {
+                const view = entryToPetView(item);
+                return `
+                    <div class="ency-card">
+                        <div>${renderPetSVG(view, 0, 42)}</div>
+                        <div style="flex:1; line-height:1.3;">
+                            <div style="font-weight:bold;">${item.cycleId} · ${getPetDisplayName(view)}</div>
+                            <div>${STAGE_NAMES[item.finalStage]} · 雙週總時數：<strong>${item.totalCycleHours.toFixed(1)}h</strong></div>
+                            <div style="font-size:9px; opacity:0.85;">${formatCategoryBreakdown(item, ' / ', true)}</div>
+                            ${item.combos && item.combos.length ? `<div style="font-size:9px;">組合：${item.combos.map(getFurnitureItemName).join('、')}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 圖鑑紀錄 → 寵物外觀 (egg / basic 的 species 欄位即為階段名)
+        function entryToPetView(entry) {
+            return { stage: entry.finalStage, species: entry.species, accessory: entry.accessory };
+        }
+
+        // 各類時數＋家具階級，例如「學 12h Lv5 / 休 4h Lv2 …」
+        function formatCategoryBreakdown(entry, separator, short) {
+            return MVP_CONFIG.CATEGORIES.map(cat => {
+                const name = short ? CATEGORY_META[cat].name[0] : CATEGORY_META[cat].name;
+                const lv = entry.furnitureLevels ? ` Lv${entry.furnitureLevels[cat]}` : '';
+                const style = entry.furniture && entry.furniture[cat].style
+                    ? `(${FURNITURE_STYLES[entry.furniture[cat].style].slice(0, 2)})` : '';
+                return `${name} ${entry.categoryBreakdown[cat]}h${lv}${style}`;
+            }).join(separator);
+        }
+
+        function showSettlementModal(entry) {
+            const view = entryToPetView(entry);
+            document.getElementById('settlementBody').innerHTML = `
+                <div>${renderPetSVG(view, 0, 64)}</div>
+                <div style="font-weight:bold; font-size:12px;">${entry.cycleId} 結算：${getPetDisplayName(view)}</div>
+                <div style="font-size:11px;">雙週總投入：<strong>${entry.totalCycleHours.toFixed(1)} 小時</strong></div>
+                <div style="font-size:10px; border:1px solid #0f380f; padding:3px 6px; background:rgba(139,172,15,0.5);">
+                    ${formatCategoryBreakdown(entry, ' ｜ ', false)}
+                </div>
+                ${entry.combos && entry.combos.length
+                    ? `<div style="font-size:10px;">🪑 組合家具：${entry.combos.map(getFurnitureItemName).join('、')}</div>` : ''}
+            `;
+            document.getElementById('settlementModal').classList.remove('hidden');
+        }
+
+        function closeSettlementModal() {
+            SoundFX.beep();
+            document.getElementById('settlementModal').classList.add('hidden');
+            renderAll();
+        }
+
+        function closeAllSubPanels() {
+            SoundFX.beep();
+            document.getElementById('recordsPanel').classList.add('hidden');
+            document.getElementById('encyclopediaPanel').classList.add('hidden');
+            renderAll();
+        }
+
+        function pressPhysicalButton(key) {
+            const btnEl = document.getElementById(`physBtn${key}`);
+            if (btnEl) {
+                btnEl.classList.add('is-pressed');
+                setTimeout(() => btnEl.classList.remove('is-pressed'), 120);
+            }
+
+            if (key === 'A') {
+                cycleUnitDuration();
+            } else if (key === 'B') {
+                SoundFX.beep();
+                const panel = document.getElementById('encyclopediaPanel');
+                const willOpen = panel.classList.contains('hidden');
+                document.getElementById('recordsPanel').classList.add('hidden');
+                panel.classList.toggle('hidden', !willOpen);
+                renderAll();
+            } else if (key === 'C') {
+                SoundFX.beep();
+                const panel = document.getElementById('recordsPanel');
+                const willOpen = panel.classList.contains('hidden');
+                document.getElementById('encyclopediaPanel').classList.add('hidden');
+                panel.classList.toggle('hidden', !willOpen);
+                renderAll();
+            }
+        }
+
+        /* ==========================================================================
+           11. 規格驗證模擬器 (測試時間推進 / 昨日補登 / 跨週結算 / 重置)
+           ========================================================================== */
+        function simAdvanceHours(hours) {
+            SoundFX.beep();
+            const now = getNow();
+            const todayStart = logicalDateAtMinutes(uiState.todayKey, getDaySchedule(uiState.todayKey).startMin);
+
+            // 若目前模擬時間早於今日開始時間，先跳轉至開始時間再加上指定小時數，確保立即觀察迷霧變化
+            if (now.getTime() < todayStart.getTime()) {
+                simulatedTimeOffsetMs = (todayStart.getTime() - Date.now()) + hours * 3600000;
+            } else {
+                simulatedTimeOffsetMs += hours * 3600000;
+            }
+            runAppBootSequence();
+        }
+
+        function simSetupYesterday() {
+            SoundFX.beep();
+            const yKey = uiState.yesterdayKey;
+            if (getCycleId(yKey) !== currentCycle.cycleId) {
+                document.getElementById('petSpeechBubble').textContent = '今日為新雙週第 1 天，不開放補登上輪！';
+                return;
+            }
+            dailyLogs[yKey] = {
+                date: yKey,
+                dayType: null,
+                allocatedHours: 2.0,
+                records: [{
+                    id: 'sim_y_' + Date.now(),
+                    category: 'rest',
+                    hours: 2.0,
+                    mode: 'retroactive',
+                    timestamp: getNow().getTime() - 86400000
+                }]
+            };
+            saveStorageData();
+            runAppBootSequence();
+            document.getElementById('petSpeechBubble').textContent = '已生成昨日 2.0h 紀錄，點擊上方「補登昨日」測試！';
+        }
+
+        // 跳到下一個邏輯日的結束時間 (時間池已流逝滿)，方便多日累積測試進化門檻
+        function simNextDay() {
+            SoundFX.beep();
+            const [y, m, d] = uiState.todayKey.split('-').map(Number);
+            const nextKey = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+            const schedule = currentCycle.scheduleSnapshot;
+            const endMin = schedule[getDefaultDayType(nextKey, schedule)].endMin;
+            // 減 1 分鐘，避免結束時間剛好落在隔日 04:00 換日線上
+            simulatedTimeOffsetMs = logicalDateAtMinutes(nextKey, endMin - 1).getTime() - Date.now();
+            runAppBootSequence();
+        }
+
+        function simTriggerCycleRollover() {
+            SoundFX.evolve();
+            // 將模擬時間推進 14 天以觸發跨雙週結算檢查
+            simulatedTimeOffsetMs += MVP_CONFIG.CYCLE_DAYS * 86400000;
+            runAppBootSequence();
+        }
+
+        function simHardReset() {
+            SoundFX.cancel();
+            try {
+                localStorage.removeItem(STORAGE_KEYS.USER_SETTINGS);
+                localStorage.removeItem(STORAGE_KEYS.CURRENT_CYCLE);
+                localStorage.removeItem(STORAGE_KEYS.DAILY_LOGS);
+                localStorage.removeItem(STORAGE_KEYS.ENCYCLOPEDIA);
+                localStorage.removeItem(STORAGE_KEYS.FURNITURE_COLLECTION);
+            } catch (e) {
+                console.error('LocalStorage 清除失敗:', e);
+            }
+            simulatedTimeOffsetMs = 0;
+            userSettings = null;
+            currentCycle = null;
+            dailyLogs = {};
+            encyclopedia = [];
+            furnitureCollection = [];
+            ['recordsPanel', 'encyclopediaPanel', 'settlementModal', 'choicePanel'].forEach(id =>
+                document.getElementById(id).classList.add('hidden'));
+            // 作息也一併清空，會重新進入首次設定畫面
+            runAppBootSequence();
+        }
+
+        /* ==========================================================================
+           12. 主題換色、音效開關與 App 生命週期掛載
+           ========================================================================== */
+        function setShellTheme(theme) {
+            SoundFX.beep();
+            uiState.shellTheme = theme;
+            document.body.classList.remove('theme-mint', 'theme-lavender');
+            if (theme === 'mint') document.body.classList.add('theme-mint');
+            if (theme === 'lavender') document.body.classList.add('theme-lavender');
+        }
+
+        function toggleSound() {
+            SoundFX.enabled = !SoundFX.enabled;
+            document.getElementById('soundIcon').textContent = SoundFX.enabled ? '🔊' : '🔇';
+            document.getElementById('soundLabel').textContent = SoundFX.enabled ? '音效開啟' : '已靜音';
+            if (SoundFX.enabled) SoundFX.beep();
+        }
+
+        // 雙幀呼吸動畫定時器 (每 700ms 切換 0/1 幀)
+        setInterval(() => {
+            uiState.animFrame = uiState.animFrame === 0 ? 1 : 0;
+            if (!currentCycle || !uiState.activeDateKey) return; // 首次設定完成前尚無週期
+            const now = getNow();
+            const targetLog = ensureDailyLog(uiState.activeDateKey);
+            const elapsed = getViewElapsedHours(uiState.activeDateKey, now);
+            const fogHours = round1(Math.max(0, elapsed - targetLog.allocatedHours));
+            document.getElementById('effectLayer').innerHTML = renderEffectsSVG(fogHours, targetLog.allocatedHours > elapsed, uiState.animFrame);
+            document.getElementById('petSpriteBox').innerHTML = renderPetSVG(getPetView(currentCycle), uiState.animFrame, 66);
+        }, 700);
+
+        // 依視窗大小等比縮放整體版面，確保畫面不超出、不出現滾軸
+        function fitLayoutToViewport() {
+            const layout = document.getElementById('appLayout');
+            layout.style.transform = 'none';
+            const scale = Math.min(1, window.innerWidth / layout.offsetWidth, window.innerHeight / layout.offsetHeight);
+            layout.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', fitLayoutToViewport);
+        document.fonts && document.fonts.ready.then(fitLayoutToViewport);
+        fitLayoutToViewport();
+
+        // 分頁切回前景時自動執行 App Boot Sequence (規格第 5 節)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                runAppBootSequence();
+            }
+        });
+
+        // 啟動初始化
+        window.onload = function () {
+            loadStorageData();
+            runAppBootSequence();
+        };
+    </script>
+</body>
+</html>
