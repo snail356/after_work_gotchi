@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AFTER-WORK GOTCHI | 下班時間紀錄與微規劃養成 MVP</title>
     <!-- 引入復古像素字體 (Pure Vanilla CSS + Google Fonts) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -809,6 +809,71 @@
         }
 
         /* ==========================================================================
+           10.5 全螢幕 RWD 模式 (測試面板關閉時)：拿掉蛋形外殼，螢幕撐滿視窗
+           ========================================================================== */
+        body.fullscreen-mode {
+            height: 100dvh;
+            background: var(--bezel-bg);
+        }
+        body.fullscreen-mode .app-layout {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            gap: 0;
+            transform: none !important;
+        }
+        body.fullscreen-mode .device-column {
+            width: 100%;
+            max-width: 640px;
+            height: 100%;
+            margin: 0 auto;
+            padding: env(safe-area-inset-top) 0 0 0;
+        }
+        body.fullscreen-mode .top-utility-bar {
+            max-width: none;
+            margin: 0;
+            padding: 6px 8px;
+        }
+        body.fullscreen-mode .theme-picker,
+        body.fullscreen-mode .keychain-loop,
+        body.fullscreen-mode .shell-brand { display: none; }
+        body.fullscreen-mode .top-utility-bar > div:last-child { margin-left: auto; }
+        body.fullscreen-mode .tamagotchi-shell {
+            max-width: none;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bezel-bg);
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+        }
+        body.fullscreen-mode .lcd-bezel {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+            padding: 0 6px;
+            box-shadow: none;
+        }
+        body.fullscreen-mode .lcd-screen {
+            flex: 1;
+            min-height: 0;
+            height: auto;
+            border-radius: 6px;
+        }
+        body.fullscreen-mode .physical-controls {
+            margin: 0;
+            gap: 44px;
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom)) 0;
+        }
+        body.fullscreen-mode .phys-btn-col:nth-child(2) { margin-top: 0; }
+        body.fullscreen-mode .phys-btn { width: 38px; height: 38px; }
+        body.fullscreen-mode .phys-btn-label { margin-top: 4px; color: rgba(255, 255, 255, 0.7); }
+
+        /* ==========================================================================
            11. 底部「規格驗證模擬器」卡片
            ========================================================================== */
         .simulator-card {
@@ -882,7 +947,7 @@
         }
     </style>
 </head>
-<body>
+<body class="fullscreen-mode">
 
     <div id="appLayout" class="app-layout">
         <!-- 左側規格驗證模擬器 -->
@@ -2316,7 +2381,10 @@
             const mover = document.getElementById('petMover');
             const icon = document.getElementById('petActionIcon');
             clearTimeout(petUseTimer);
-            mover.style.transform = `translate(${move.x}px, ${move.y}px)`;
+            // 依舞台寬度換算水平位移 (原始 354px 寬時為 ±105px)，全螢幕時也能走到角落
+            const stageW = document.querySelector('.lcd-stage').offsetWidth || 354;
+            const dx = Math.sign(move.x) * Math.max(Math.abs(move.x), stageW / 2 - 72);
+            mover.style.transform = `translate(${dx}px, ${move.y}px)`;
             icon.textContent = move.icon;
             icon.classList.remove('hidden');
             petUseTimer = setTimeout(() => {
@@ -2881,6 +2949,8 @@
         const SIM_PANEL_KEY = 'awg_sim_panel_open';
         function applySimulatorVisibility(open) {
             document.getElementById('simulatorCard').classList.toggle('hidden', !open);
+            // 測試模式才顯示蛋形外殼；一般模式依視窗全螢幕顯示
+            document.body.classList.toggle('fullscreen-mode', !open);
             const btn = document.getElementById('simToggleBtn');
             btn.style.background = open ? '#475569' : '';
             btn.setAttribute('aria-pressed', open ? 'true' : 'false');
@@ -2896,6 +2966,7 @@
         function fitLayoutToViewport() {
             const layout = document.getElementById('appLayout');
             layout.style.transform = 'none';
+            if (document.body.classList.contains('fullscreen-mode')) return; // 全螢幕模式不縮放
             const scale = Math.min(1, window.innerWidth / layout.offsetWidth, window.innerHeight / layout.offsetHeight);
             layout.style.transform = `scale(${scale})`;
         }
