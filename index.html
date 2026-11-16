@@ -882,7 +882,7 @@
 
     <div id="appLayout" class="app-layout">
         <!-- 左側規格驗證模擬器 -->
-        <section class="simulator-card">
+        <section id="simulatorCard" class="simulator-card hidden">
             <div class="sim-header">
                 <span class="sim-title">🧪 規格驗證模擬器 (測試邊界條件)</span>
                 <span id="simClockBadge" class="sim-clock-badge">目前基準: 真實時間</span>
@@ -927,6 +927,7 @@
                     <button class="theme-dot" style="background:#d8c7eb;" onclick="setShellTheme('lavender')" title="薰衣草淡紫"></button>
                 </div>
                 <div style="display:flex; gap:6px;">
+                    <button id="simToggleBtn" class="sound-btn" onclick="toggleSimulator()" title="顯示 / 隱藏左側規格驗證模擬器">🧪 測試</button>
                     <button class="sound-btn" onclick="openSettingsPanel(false)" title="修改平日 / 假日作息 (下一輪生效)">⚙ 作息設定</button>
                     <button id="soundToggleBtn" class="sound-btn" onclick="toggleSound()">
                         <span id="soundIcon">🔊</span>
@@ -2780,6 +2781,21 @@
             document.getElementById('petSpriteBox').innerHTML = renderPetSVG(getPetView(currentCycle), uiState.animFrame, 66);
         }, 700);
 
+        // 左側測試面板開關 (預設關閉，狀態記在 localStorage)
+        const SIM_PANEL_KEY = 'awg_sim_panel_open';
+        function applySimulatorVisibility(open) {
+            document.getElementById('simulatorCard').classList.toggle('hidden', !open);
+            const btn = document.getElementById('simToggleBtn');
+            btn.style.background = open ? '#475569' : '';
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            fitLayoutToViewport();
+        }
+        function toggleSimulator() {
+            const open = document.getElementById('simulatorCard').classList.contains('hidden');
+            try { localStorage.setItem(SIM_PANEL_KEY, open ? '1' : '0'); } catch (e) {}
+            applySimulatorVisibility(open);
+        }
+
         // 依視窗大小等比縮放整體版面，確保畫面不超出、不出現滾軸
         function fitLayoutToViewport() {
             const layout = document.getElementById('appLayout');
@@ -2789,7 +2805,9 @@
         }
         window.addEventListener('resize', fitLayoutToViewport);
         document.fonts && document.fonts.ready.then(fitLayoutToViewport);
-        fitLayoutToViewport();
+        let simPanelOpen = false;
+        try { simPanelOpen = localStorage.getItem(SIM_PANEL_KEY) === '1'; } catch (e) {}
+        applySimulatorVisibility(simPanelOpen);
 
         // 分頁切回前景時自動執行 App Boot Sequence (規格第 5 節)
         document.addEventListener('visibilitychange', () => {
