@@ -11,43 +11,19 @@
     
     <style>
         /* ==========================================================================
-           1. 色彩變數與掌機主題設定 (Pure CSS, Zero External Framework)
+           1. 色彩變數 (Pure CSS, Zero External Framework)
            ========================================================================== */
         :root {
-            /* 掌機外殼預設：復古奶油白 */
-            --shell-main: #f4efe6;
-            --shell-light: #ffffff;
-            --shell-shadow: #d5ccb8;
-            --shell-border: #b8ae99;
+            /* 螢幕邊框與實體按鍵 */
             --bezel-bg: #2d3138;
             --btn-color: #e06d53;
             --btn-shadow: #a8432d;
-            
+
             /* 經典單色點陣綠底 LCD 調色盤 */
             --lcd-bg: #9bbc0f;
             --lcd-light: #8bac0f;
             --lcd-dark: #306230;
             --lcd-darkest: #0f380f;
-        }
-
-        body.theme-mint {
-            --shell-main: #a8dcd1;
-            --shell-light: #d4f2eb;
-            --shell-shadow: #7ab5a8;
-            --shell-border: #5c9689;
-            --bezel-bg: #263238;
-            --btn-color: #ffca3a;
-            --btn-shadow: #c79616;
-        }
-
-        body.theme-lavender {
-            --shell-main: #d8c7eb;
-            --shell-light: #efe6fa;
-            --shell-shadow: #b09bc7;
-            --shell-border: #8e78a6;
-            --bezel-bg: #2a2438;
-            --btn-color: #ff7eb9;
-            --btn-shadow: #c74c84;
         }
 
         * {
@@ -98,35 +74,18 @@
         }
 
         /* ==========================================================================
-           2. 頂部外殼與音效快捷控制列
+           2. 頂部測試模式、作息設定與音效控制列
            ========================================================================== */
         .top-utility-bar {
             width: 100%;
             max-width: 430px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             margin-bottom: 12px;
             padding: 0 6px;
             font-size: 12px;
         }
-
-        .theme-picker {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #94a3b8;
-        }
-
-        .theme-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid #94a3b8;
-            cursor: pointer;
-            transition: transform 0.15s;
-        }
-        .theme-dot:hover { transform: scale(1.15); }
 
         .sound-btn {
             background: #272b33;
@@ -142,49 +101,15 @@
             gap: 5px;
         }
         .sound-btn:hover { background: #333944; }
+        .sound-btn.is-on { border-color: #fbbf24; color: #fbbf24; }
 
         /* ==========================================================================
-           3. 蛋形掌機外殼 (Tamagotchi Egg Shell)
+           3. 裝置本體 (測試模式：螢幕＋下方 A / B / C 實體三鍵，不含蛋形外殼)
            ========================================================================== */
         .tamagotchi-shell {
             width: 100%;
             max-width: 430px;
-            background: radial-gradient(circle at 30% 20%, var(--shell-light) 0%, var(--shell-main) 55%, var(--shell-shadow) 100%);
-            border-radius: 46% 46% 44% 44% / 38% 38% 35% 35%;
-            padding: 26px 22px 34px 22px;
-            box-shadow: 
-                0 24px 48px rgba(0, 0, 0, 0.6),
-                inset 0 6px 12px rgba(255, 255, 255, 0.85),
-                inset 0 -10px 20px rgba(0, 0, 0, 0.2),
-                0 0 0 4px var(--shell-border);
             position: relative;
-            transition: background 0.3s ease;
-        }
-
-        .keychain-loop {
-            width: 34px;
-            height: 22px;
-            background: var(--shell-shadow);
-            border: 4px solid var(--shell-border);
-            border-radius: 16px 16px 6px 6px;
-            margin: -40px auto 10px auto;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .keychain-hole {
-            width: 12px;
-            height: 8px;
-            background: #1a1c20;
-            border-radius: 50%;
-            margin: 3px auto;
-        }
-
-        .shell-brand {
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 10px;
-            letter-spacing: 1.5px;
-            color: rgba(0, 0, 0, 0.65);
-            font-weight: bold;
         }
 
         /* ==========================================================================
@@ -192,11 +117,11 @@
            ========================================================================== */
         .lcd-bezel {
             background-color: var(--bezel-bg);
-            border-radius: 26px 26px 34px 34px;
-            padding: 12px 12px 16px 12px;
+            border-radius: 18px;
+            padding: 12px 12px 14px 12px;
             box-shadow: 
                 inset 0 4px 10px rgba(0, 0, 0, 0.75),
-                0 2px 4px rgba(255, 255, 255, 0.45);
+                0 16px 36px rgba(0, 0, 0, 0.5);
         }
 
         .bezel-header {
@@ -263,17 +188,42 @@
             border-radius: 2px;
         }
 
-        .yesterday-badge {
+        /* 補登昨日 / 回到今日：狀態列下方整條按鈕 */
+        .yesterday-bar {
+            width: 100%;
+            margin-top: 5px;
+            padding: 4px 6px;
             background: var(--lcd-darkest);
             color: var(--lcd-bg);
-            border: 1px solid var(--lcd-darkest);
-            padding: 1px 5px;
-            font-size: 10px;
+            border: 2px solid var(--lcd-darkest);
             font-family: inherit;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
-            animation: blinkPulse 1.4s infinite;
+            box-shadow: 2px 2px 0 rgba(15, 56, 15, 0.35);
         }
+        .yesterday-bar.has-quota { animation: blinkPulse 1.4s infinite; }
+        .yesterday-bar.is-back {
+            background: var(--lcd-light);
+            color: var(--lcd-darkest);
+            animation: none;
+        }
+        .yesterday-bar:active { transform: translate(1px, 1px); box-shadow: none; }
+
+        /* 子面板的「✕ 返回」：加大避免沒注意到 */
+        .back-btn {
+            border: 2px solid var(--lcd-darkest);
+            background: var(--lcd-darkest);
+            color: var(--lcd-bg);
+            padding: 4px 12px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 rgba(15, 56, 15, 0.35);
+        }
+        .back-btn:hover { background: var(--lcd-dark); }
+        .back-btn:active { transform: translate(1px, 1px); box-shadow: none; }
 
         .day-type-btn {
             background: transparent;
@@ -764,7 +714,7 @@
             justify-content: center;
             align-items: flex-start;
             gap: 30px;
-            margin-top: 20px;
+            margin-top: 16px;
         }
 
         .phys-btn-col {
@@ -802,14 +752,14 @@
         }
 
         .phys-btn-label {
-            margin-top: 6px;
-            font-size: 10px;
+            margin-top: 8px;
+            font-size: 11px;
             font-weight: bold;
-            color: rgba(0, 0, 0, 0.6);
+            color: #cbd5e1; /* 深色背景上的標籤 */
         }
 
         /* ==========================================================================
-           10.5 全螢幕 RWD 模式 (測試面板關閉時)：拿掉蛋形外殼，螢幕撐滿視窗
+           10.5 全螢幕 RWD 模式 (測試模式關閉時)：螢幕撐滿視窗
            ========================================================================== */
         body.fullscreen-mode {
             height: 100dvh;
@@ -834,9 +784,6 @@
             margin: 0;
             padding: 6px 8px;
         }
-        body.fullscreen-mode .theme-picker,
-        body.fullscreen-mode .keychain-loop,
-        body.fullscreen-mode .shell-brand { display: none; }
         body.fullscreen-mode .top-utility-bar > div:last-child { margin-left: auto; }
         body.fullscreen-mode .tamagotchi-shell {
             max-width: none;
@@ -987,16 +934,10 @@
         </section>
 
         <div class="device-column">
-            <!-- 頂部外殼換色與音效控制列 -->
+            <!-- 頂部測試模式、作息設定與音效控制列 -->
             <div class="top-utility-bar">
-                <div class="theme-picker">
-                    <span>外殼配色:</span>
-                    <button class="theme-dot" style="background:#f4efe6;" onclick="setShellTheme('cream')" title="復古奶油白"></button>
-                    <button class="theme-dot" style="background:#a8dcd1;" onclick="setShellTheme('mint')" title="薄荷蘇打綠"></button>
-                    <button class="theme-dot" style="background:#d8c7eb;" onclick="setShellTheme('lavender')" title="薰衣草淡紫"></button>
-                </div>
                 <div style="display:flex; gap:6px;">
-                    <button id="simToggleBtn" class="sound-btn" onclick="toggleSimulator()" title="顯示 / 隱藏左側規格驗證模擬器">🧪 測試</button>
+                    <button id="simToggleBtn" class="sound-btn" onclick="toggleSimulator()" title="顯示 / 隱藏左側規格驗證模擬器">🧪 測試模式：關</button>
                     <button class="sound-btn" onclick="openSettingsPanel(false)" title="修改平日 / 假日作息 (下一輪生效)">⚙ 作息設定</button>
                     <button id="soundToggleBtn" class="sound-btn" onclick="toggleSound()">
                         <span id="soundIcon">🔊</span>
@@ -1005,12 +946,8 @@
                 </div>
             </div>
 
-            <!-- 蛋形掌機本體 -->
+            <!-- 裝置本體：螢幕＋下方 A / B / C 實體三鍵 -->
             <main class="tamagotchi-shell">
-                <div class="keychain-loop">
-                    <div class="keychain-hole"></div>
-                </div>
-                <div class="shell-brand font-en">★ AFTER-WORK GOTCHI ★</div>
 
                 <!-- 螢幕深色邊框 -->
                 <div class="lcd-bezel">
@@ -1029,15 +966,14 @@
                                 <div style="display:flex; align-items:center; gap:4px;">
                                     <span id="logicalDateDisplay">2026-11-14</span>
                                     <button id="dayTypeBtn" class="day-type-btn" onclick="toggleDayType()" title="切換今日休假 / 今天上班">平日</button>
-                                    <button id="yesterdayBtn" class="yesterday-badge hidden" onclick="toggleYesterdayView()" title="點擊補登昨日未滿額度">
-                                        補登昨日
-                                    </button>
                                 </div>
                                 <span id="petStageBadge" class="badge-tag">蛋期 0.0h</span>
                                 <span id="dailyQuotaText">0.0/6.0h</span>
                             </div>
                             <!-- 12格時間能量條 (已認領 / 待認領迷霧 / 預支規劃 / 剩餘，每格 = 當日時間池 ÷ 12) -->
                             <div id="timeMeterBar" class="time-meter-bar"></div>
+                            <!-- 補登昨日 / 回到今日：整條大按鈕，同一輪的昨日都可補登 (昨日沒有紀錄也可以) -->
+                            <button id="yesterdayBtn" class="yesterday-bar hidden" onclick="toggleYesterdayView()">◀ 補登昨日</button>
                         </header>
 
                         <!-- 2. 中央房間舞台與彈出子面板 -->
@@ -1091,7 +1027,7 @@
                             <div id="recordsPanel" class="sub-view-panel hidden">
                                 <div class="sub-view-header">
                                     <span id="recordsPanelTitle">📋 今日時間明細 (2026-11-14)</span>
-                                    <button class="pixel-mini-btn" onclick="closeAllSubPanels()">✕ 返回</button>
+                                    <button class="back-btn" onclick="closeAllSubPanels()">✕ 返回</button>
                                 </div>
                                 <div id="recordsListContainer" class="scroll-list"></div>
                                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #0f380f; padding-top:4px; font-size:10px;">
@@ -1104,7 +1040,7 @@
                             <div id="encyclopediaPanel" class="sub-view-panel hidden">
                                 <div class="sub-view-header">
                                     <span>📖 週期進化圖鑑 (<span id="encyCount">0</span>)</span>
-                                    <button class="pixel-mini-btn" onclick="closeAllSubPanels()">✕ 返回</button>
+                                    <button class="back-btn" onclick="closeAllSubPanels()">✕ 返回</button>
                                 </div>
                                 <div id="encyclopediaListContainer" class="scroll-list"></div>
                                 <div style="font-size:9px; text-align:center; border-top:1px solid #0f380f; padding-top:3px;">
@@ -1116,7 +1052,7 @@
                             <div id="settlementModal" class="sub-view-panel hidden" style="z-index:38;">
                                 <div class="sub-view-header">
                                     <span>🎉 週期結算完成！收錄圖鑑</span>
-                                    <button class="pixel-mini-btn" onclick="closeSettlementModal()">開始新週</button>
+                                    <button class="back-btn" onclick="closeSettlementModal()">開始新一輪</button>
                                 </div>
                                 <div id="settlementBody" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:6px;">
                                 </div>
@@ -1168,7 +1104,7 @@
                         <div id="settingsPanel" class="settings-panel hidden">
                             <div class="sub-view-header">
                                 <span>⚙ 作息設定</span>
-                                <button id="settingsCloseBtn" class="pixel-mini-btn" onclick="closeSettingsPanel()">✕ 返回</button>
+                                <button id="settingsCloseBtn" class="back-btn" onclick="closeSettingsPanel()">✕ 返回</button>
                             </div>
                             <div id="settingsIntro" class="settings-intro">
                                 歡迎！先告訴我你通常什麼時候有空，<br>我會依此計算你的雙週時間池～
@@ -1732,13 +1668,14 @@
             if (currentCycle.pendingChoices.length) openChoicePanel();
         }
 
+        // 昨日與今日同一輪即可切換到昨日：昨日沒開 APP (沒有紀錄) 也能補登；已補滿時仍可查看與撤銷
         function checkYesterdayBackfill() {
+            return getCycleId(uiState.yesterdayKey) === currentCycle.cycleId;
+        }
+
+        function getYesterdayRemainingHours() {
             const yLog = dailyLogs[uiState.yesterdayKey];
-            return Boolean(
-                yLog &&
-                getCycleId(uiState.yesterdayKey) === currentCycle.cycleId &&
-                yLog.allocatedHours < getDailyCap(uiState.yesterdayKey)
-            );
+            return round1(Math.max(0, getDailyCap(uiState.yesterdayKey) - (yLog ? yLog.allocatedHours : 0)));
         }
 
         /* ==========================================================================
@@ -1827,7 +1764,6 @@
 
             // 若在昨日補登視角下把昨日時間池補滿，自動切回今日視角並更新徽章
             if (isYesterdayMode && log.allocatedHours >= dailyCap) {
-                uiState.canBackfillYesterday = false;
                 uiState.activeDateKey = uiState.todayKey;
                 document.getElementById('petSpeechBubble').textContent = `昨日 ${dailyCap.toFixed(1)}h 補登完成！已切回今日視角～`;
             }
@@ -2466,13 +2402,15 @@
                 ? `◀ 昨日 ${uiState.yesterdayKey.slice(5)}`
                 : uiState.todayKey;
 
+            // 補登昨日 / 回到今日：昨日還有未認領時數時閃爍提示
             const yBtn = document.getElementById('yesterdayBtn');
-            if (uiState.canBackfillYesterday) {
-                yBtn.classList.remove('hidden');
-                yBtn.textContent = isYesterdayMode ? '回今日' : '補登昨日';
-            } else {
-                yBtn.classList.add('hidden');
-            }
+            const yRemaining = uiState.canBackfillYesterday ? getYesterdayRemainingHours() : 0;
+            yBtn.classList.toggle('hidden', !uiState.canBackfillYesterday);
+            yBtn.classList.toggle('is-back', isYesterdayMode);
+            yBtn.classList.toggle('has-quota', !isYesterdayMode && yRemaining > 0);
+            yBtn.textContent = isYesterdayMode
+                ? '▶ 回到今日'
+                : (yRemaining > 0 ? `◀ 補登昨日（還有 ${yRemaining.toFixed(1)}h 未認領）` : '◀ 查看昨日紀錄（已補滿）');
 
             // 今日休假 / 今天上班切換鈕 (僅今日視角可切換)
             const dayTypeBtn = document.getElementById('dayTypeBtn');
@@ -2918,14 +2856,6 @@
         /* ==========================================================================
            12. 主題換色、音效開關與 App 生命週期掛載
            ========================================================================== */
-        function setShellTheme(theme) {
-            SoundFX.beep();
-            uiState.shellTheme = theme;
-            document.body.classList.remove('theme-mint', 'theme-lavender');
-            if (theme === 'mint') document.body.classList.add('theme-mint');
-            if (theme === 'lavender') document.body.classList.add('theme-lavender');
-        }
-
         function toggleSound() {
             SoundFX.enabled = !SoundFX.enabled;
             document.getElementById('soundIcon').textContent = SoundFX.enabled ? '🔊' : '🔇';
@@ -2949,10 +2879,11 @@
         const SIM_PANEL_KEY = 'awg_sim_panel_open';
         function applySimulatorVisibility(open) {
             document.getElementById('simulatorCard').classList.toggle('hidden', !open);
-            // 測試模式才顯示蛋形外殼；一般模式依視窗全螢幕顯示
+            // 測試模式：測試面板＋固定尺寸掌機；一般模式依視窗全螢幕顯示
             document.body.classList.toggle('fullscreen-mode', !open);
             const btn = document.getElementById('simToggleBtn');
-            btn.style.background = open ? '#475569' : '';
+            btn.textContent = open ? '🧪 測試模式：開' : '🧪 測試模式：關';
+            btn.classList.toggle('is-on', open);
             btn.setAttribute('aria-pressed', open ? 'true' : 'false');
             fitLayoutToViewport();
         }
